@@ -3,12 +3,14 @@
 Lint all plugin + managed-agent manifests and verify cross-file references.
 
 Checks:
-  1. Every *.yaml under managed-agents/ parses.
+  1. Every *.yaml under managed-agent-cookbooks/ parses.
   2. Every plugin.json / marketplace.json / steering-examples.json parses.
-  3. Every <vertical>/agents/*.md has valid YAML frontmatter with name + description.
-  4. Every system.file, skills[].path, callable_agents[].manifest in agent.yaml
+  3. Every plugin.json has name, version, description, and semver version.
+  4. Every <vertical>/agents/*.md has valid YAML frontmatter with name + description.
+  5. Every system.file, skills[].path, callable_agents[].manifest in agent.yaml
      and subagent yamls resolves to an existing file/dir.
-  5. Every managed-agents/<slug>/ has agent.yaml, README.md, steering-examples.json.
+  6. Every managed-agent-cookbooks/<slug>/ has agent.yaml, README.md, steering-examples.json.
+  7. Marketplace plugin names match their plugin.json name.
 
 Exit 0 if clean, 1 otherwise. Requires: pyyaml.
 """
@@ -27,6 +29,7 @@ PLUGINS = ROOT / "plugins"
 MANAGED = ROOT / "managed-agent-cookbooks"
 errors: list[str] = []
 checked = 0
+plugin_manifests: dict[Path, dict] = {}
 
 
 def err(msg: str) -> None:
@@ -56,9 +59,33 @@ for pat in json_globs:
     for jf in sorted(ROOT.glob(pat)):
         checked += 1
         try:
-            json.loads(jf.read_text())
+            data = json.loads(jf.read_text())
         except json.JSONDecodeError as e:
             err(f"JSON parse: {rel(jf)}: {e}")
+            continue
+        if jf.name == "plugin.json":
+            if isinstance(data, dict):
+                plugin_manifests[jf.resolve()] = data
+            else:
+                err(f"plugin.json: {rel(jf)}: expected JSON object at root")
+
+
+def is_semver(value: str) -> bool:
+    parts = value.split(".")
+    return len(parts) == 3 and all(part.isdigit() for part in parts)
+
+
+# --- 2b. plugin manifest required fields ------------------------------------
+for jf, data in plugin_manifests.items():
+    for field in ("name", "version", "description"):
+        if not data.get(field):
+            err(f"plugin.json: {rel(jf)}: missing '{field}'")
+    version = data.get("version")
+    if isinstance(version, str):
+        if not is_semver(version):
+            err(f"plugin.json: {rel(jf)}: version '{version}' is not semver (X.Y.Z)")
+    elif "version" in data:
+        err(f"plugin.json: {rel(jf)}: version must be a string")
 
 # --- 3. agent.md frontmatter -----------------------------------------------
 for md in sorted(PLUGINS.glob("agent-plugins/*/agents/*.md")):
@@ -173,8 +200,16 @@ for md in sorted(PLUGINS.glob("agent-plugins/*/agents/*.md")):
 mp = ROOT / ".claude-plugin" / "marketplace.json"
 for p in json.loads(mp.read_text()).get("plugins", []):
     src = (ROOT / p["source"]).resolve()
-    if not (src / ".claude-plugin" / "plugin.json").is_file():
+    plugin_json = (src / ".claude-plugin" / "plugin.json").resolve()
+    if not plugin_json.is_file():
         err(f"marketplace: {p['name']} source -> {p['source']} (no plugin.json)")
+        continue
+    plugin_data = plugin_manifests.get(plugin_json)
+    if plugin_data and plugin_data.get("name") != p.get("name"):
+        err(
+            f"marketplace: {p.get('name')} source -> {p['source']} "
+            f"(plugin.json name '{plugin_data.get('name')}')"
+        )
 
 # --- 5. required files per managed-agent -----------------------------------
 for d in sorted(MANAGED.iterdir()):

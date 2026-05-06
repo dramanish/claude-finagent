@@ -1,0 +1,23 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: install validation deps
+        run: python3 -m pip install pyyaml jsonschema anthropic
+      - name: check manifests
+        run: python3 scripts/check.py
+      - name: dry-run managed-agent cookbooks
+        run: bash scripts/test-cookbooks.sh
