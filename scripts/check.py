@@ -117,6 +117,14 @@ import re  # noqa: E402
 
 
 def dirs_match(left: Path, right: Path) -> bool | None:
+    """Return whether two skill directories match.
+
+    Returns:
+        True if the directories match recursively.
+        False if their contents differ.
+        None if comparison could not complete because of an I/O/stat/compare error.
+        In the None case, this function also records a validation error via err().
+    """
     ignore = set(filecmp.DEFAULT_IGNORES)
     stack = [Path(".")]
     while stack:
@@ -155,16 +163,14 @@ def dirs_match(left: Path, right: Path) -> bool | None:
                 )
                 return None
 
-            if left_is_dir or right_is_dir:
-                if left_is_dir and right_is_dir:
-                    stack.append(rel_dir / name)
-                else:
-                    return False
+            if left_is_dir != right_is_dir or left_is_file != right_is_file:
+                return False
+
+            if left_is_dir:
+                stack.append(rel_dir / name)
                 continue
 
-            if left_is_file or right_is_file:
-                if not (left_is_file and right_is_file):
-                    return False
+            if left_is_file:
                 try:
                     same = filecmp.cmp(left_entry, right_entry, shallow=False)
                 except OSError as e:
@@ -177,7 +183,11 @@ def dirs_match(left: Path, right: Path) -> bool | None:
                     return False
                 continue
 
-            return False
+            err(
+                f"bundled-skill: {rel(left_entry)} vs {rel(right_entry)}: "
+                "unsupported file type"
+            )
+            return None
     return True
 
 
