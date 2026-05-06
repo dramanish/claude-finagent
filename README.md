@@ -250,6 +250,7 @@ These are reference templates — they get better when you tune them to how your
 
 Everything here is markdown and YAML. Fork, edit, PR. For new content:
 
+- Install validation script dependencies with `python3 -m pip install -r requirements-dev.txt`.
 - New skill → add it under `plugins/vertical-plugins/<vertical>/skills/`, then run `python3 scripts/sync-agent-skills.py` to propagate to any agent that bundles it.
 - New agent → `plugins/agent-plugins/<slug>/` (with `agents/<slug>.md` + `skills/`) and a matching `managed-agent-cookbooks/<slug>/`.
 - Run `python3 scripts/check.py` before pushing — it lints every manifest, verifies all cross-file references resolve, and fails if any bundled skill has drifted from its vertical source.
