@@ -115,6 +115,34 @@ for yml in sorted(MANAGED.rglob("*.yaml")):
 import filecmp  # noqa: E402
 import re  # noqa: E402
 
+def dirs_match(left: Path, right: Path) -> bool:
+    left_files = set()
+    left_dirs = set()
+    for path in left.rglob("*"):
+        rel_path = path.relative_to(left)
+        if path.is_dir():
+            left_dirs.add(rel_path)
+        elif path.is_file():
+            left_files.add(rel_path)
+
+    right_files = set()
+    right_dirs = set()
+    for path in right.rglob("*"):
+        rel_path = path.relative_to(right)
+        if path.is_dir():
+            right_dirs.add(rel_path)
+        elif path.is_file():
+            right_files.add(rel_path)
+
+    if left_dirs != right_dirs or left_files != right_files:
+        return False
+
+    return all(
+        filecmp.cmp(left / rel_path, right / rel_path, shallow=False)
+        for rel_path in left_files
+    )
+
+
 src_by_name = {p.name: p for p in PLUGINS.glob("vertical-plugins/*/skills/*") if p.is_dir()}
 for bundled in sorted(PLUGINS.glob("agent-plugins/*/skills/*")):
     if not bundled.is_dir():
@@ -123,8 +151,7 @@ for bundled in sorted(PLUGINS.glob("agent-plugins/*/skills/*")):
     if not src:
         err(f"bundled-skill: {rel(bundled)}: no vertical-plugins source named '{bundled.name}'")
         continue
-    cmp = filecmp.dircmp(src, bundled)
-    if cmp.diff_files or cmp.left_only or cmp.right_only:
+    if not dirs_match(src, bundled):
         err(
             f"bundled-skill: {rel(bundled)}: drifted from {rel(src)} "
             f"(run scripts/sync-agent-skills.py)"
