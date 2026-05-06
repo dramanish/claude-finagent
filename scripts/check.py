@@ -115,10 +115,20 @@ for yml in sorted(MANAGED.rglob("*.yaml")):
 import filecmp  # noqa: E402
 import re  # noqa: E402
 
+IGNORED_NAMES = {".DS_Store", "Thumbs.db", "__pycache__"}
+IGNORED_SUFFIXES = {".pyc", ".log"}
+
+
+def should_ignore(path: Path) -> bool:
+    return any(part in IGNORED_NAMES for part in path.parts) or path.suffix in IGNORED_SUFFIXES
+
+
 def dirs_match(left: Path, right: Path) -> bool:
     left_files = set()
     left_dirs = set()
     for path in left.rglob("*"):
+        if should_ignore(path):
+            continue
         rel_path = path.relative_to(left)
         if path.is_dir():
             left_dirs.add(rel_path)
@@ -128,6 +138,8 @@ def dirs_match(left: Path, right: Path) -> bool:
     right_files = set()
     right_dirs = set()
     for path in right.rglob("*"):
+        if should_ignore(path):
+            continue
         rel_path = path.relative_to(right)
         if path.is_dir():
             right_dirs.add(rel_path)
