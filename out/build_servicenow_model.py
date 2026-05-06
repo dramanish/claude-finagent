@@ -88,23 +88,23 @@ def lnk(ws, ref, formula, fmt=FMT_DOLLAR, bold=False):
     c.number_format = fmt
 
 
-def dark_hdr(ws, ref, label, merged_end=None):
+def dark_hdr(ws, ref, label_text, merged_end=None):
     """Dark blue fill, white bold font header."""
     if merged_end:
         ws.merge_cells(f"{ref}:{merged_end}")
     c = ws[ref]
-    c.value = label
+    c.value = label_text
     c.font = _font(WHITE, bold=True)
     c.fill = _fill(DARK_BLUE)
     c.alignment = _center()
 
 
-def light_hdr(ws, ref, label, merged_end=None):
+def light_hdr(ws, ref, label_text, merged_end=None):
     """Light blue fill, black bold font sub-header."""
     if merged_end:
         ws.merge_cells(f"{ref}:{merged_end}")
     c = ws[ref]
-    c.value = label
+    c.value = label_text
     c.font = _font(BLACK, bold=True)
     c.fill = _fill(LIGHT_BLUE)
     c.alignment = _center()
@@ -175,6 +175,271 @@ def subtitle(ws, ref, text):
     c.alignment = _left()
 
 
+def _prev(col):
+    """Return the previous column letter (E->D, F->E, G->F)."""
+    return get_column_letter(column_index_from_string(col) - 1)
+
+
+def proj_assump_col(proj_col):
+    """Map projection col (E/F/G) to Assumptions col (B/C/D)."""
+    return {'E': 'B', 'F': 'C', 'G': 'D'}[proj_col]
+
+
+# ---------------------------------------------------------------------------
+# revenue_build — Software KPIs & Revenue Forecast
+# ---------------------------------------------------------------------------
+
+def build_revenue_build(ws):
+    ws.sheet_properties.tabColor = DARK_BLUE
+    set_col_widths(ws, {'A': 50, 'B': 12, 'C': 12, 'D': 12, 'E': 12, 'F': 12, 'G': 12})
+
+    dark_hdr(ws, 'A1', 'SERVICENOW (NOW) — REVENUE BUILD & SOFTWARE KPIs', merged_end='G1')
+    subtitle(ws, 'A2', '($ in millions, unless noted)')
+    col_hdrs(ws, 3)
+
+    # ── ARR BRIDGE ────────────────────────────────────────────────────────
+    dark_hdr(ws, 'A4', 'ANNUAL RECURRING REVENUE (ARR) BRIDGE', merged_end='G4')
+    label(ws, 'A5',  'Beginning ARR',                  indent=2)
+    label(ws, 'A6',  '+ New Logo ARR',                 indent=2)
+    label(ws, 'A7',  '+ Expansion ARR',                indent=2)
+    label(ws, 'A8',  '− Contraction ARR',              indent=2)
+    label(ws, 'A9',  '− Churned ARR',                  indent=2)
+    label(ws, 'A10', 'Ending ARR',                     bold=True)
+    label(ws, 'A11', 'ARR Growth %',                   indent=2, italic=True)
+    label(ws, 'A12', 'Implied ARR per Customer ($K)',   indent=2, italic=True)
+
+    # Historical bridge — hardcoded blue inputs
+    # Bridge components chosen to sum to disclosed ending ARR values
+    # FY22: 5737→7100  FY23: 7100→8970  FY24: 8970→10900
+    hist_beg_arr  = [5737, 7100, 8970]
+    hist_new_logo = [200,  250,  300]
+    hist_expand   = [1237, 1712, 1747]
+    hist_contract = [-17,  -21,  -27]
+    hist_churn    = [-57,  -71,  -90]
+
+    inp(ws, 'B5', hist_beg_arr[0])
+    for i, col in enumerate(HIST_COLS):
+        if i > 0:
+            frm(ws, f'{col}5', f'={HIST_COLS[i-1]}10')
+        inp(ws, f'{col}6', hist_new_logo[i])
+        inp(ws, f'{col}7', hist_expand[i])
+        inp(ws, f'{col}8', hist_contract[i])
+        inp(ws, f'{col}9', hist_churn[i])
+        total(ws, f'{col}10', f'={col}5+{col}6+{col}7+{col}8+{col}9')
+        if i > 0:
+            frm(ws, f'{col}11', f'={col}10/{HIST_COLS[i-1]}10-1', fmt=FMT_PCT, italic=True)
+        frm(ws, f'{col}12', f'={col}10/{col}32*1000', fmt='#,##0.0', italic=True)
+
+    # Projection bridge — formulas referencing Assumptions tab
+    prev = 'D'
+    for col in PROJ_COLS:
+        ac = proj_assump_col(col)
+        frm(ws, f'{col}5', f'={prev}10')
+        lnk(ws, f'{col}6', f'={prev}6*(1+Assumptions!${ac}$34)')
+        lnk(ws, f'{col}7', f'={col}5*Assumptions!${ac}$35')
+        lnk(ws, f'{col}8', f'=-{col}5*Assumptions!${ac}$37')
+        lnk(ws, f'{col}9', f'=-{col}5*(1-Assumptions!${ac}$36)')
+        total(ws, f'{col}10', f'={col}5+{col}6+{col}7+{col}8+{col}9')
+        frm(ws, f'{col}11', f'={col}10/{prev}10-1', fmt=FMT_PCT, italic=True)
+        frm(ws, f'{col}12', f'={col}10/{col}32*1000', fmt='#,##0.0', italic=True)
+        prev = col
+
+    # ── RETENTION METRICS ─────────────────────────────────────────────────
+    dark_hdr(ws, 'A14', 'RETENTION METRICS', merged_end='G14')
+    label(ws, 'A15', 'Gross Revenue Retention (GRR) %', indent=2)
+    label(ws, 'A16', 'Net Revenue Retention (NRR) %',   indent=2)
+    label(ws, 'A17', 'Gross Churn Rate %',               indent=3, italic=True)
+    label(ws, 'A18', 'Net Expansion Rate %',             indent=3, italic=True)
+    label(ws, 'A19', 'Logo Churn Rate %',                indent=2)
+
+    hist_grr  = [0.990, 0.990, 0.990]
+    hist_nrr  = [1.270, 1.260, 1.250]
+    hist_logo = [0.030, 0.030, 0.030]
+
+    for i, col in enumerate(HIST_COLS):
+        inp(ws, f'{col}15', hist_grr[i],  fmt=FMT_PCT)
+        inp(ws, f'{col}16', hist_nrr[i],  fmt=FMT_PCT)
+        frm(ws, f'{col}17', f'=1-{col}15', fmt=FMT_PCT, italic=True)
+        frm(ws, f'{col}18', f'={col}16-{col}15', fmt=FMT_PCT, italic=True)
+        inp(ws, f'{col}19', hist_logo[i], fmt=FMT_PCT)
+
+    for col in PROJ_COLS:
+        ac = proj_assump_col(col)
+        lnk(ws, f'{col}15', f'=Assumptions!${ac}$36', fmt=FMT_PCT)
+        lnk(ws, f'{col}16', f'=Assumptions!${ac}$41', fmt=FMT_PCT)
+        frm(ws, f'{col}17', f'=1-{col}15', fmt=FMT_PCT, italic=True)
+        frm(ws, f'{col}18', f'={col}16-{col}15', fmt=FMT_PCT, italic=True)
+        lnk(ws, f'{col}19', f'=Assumptions!${ac}$42', fmt=FMT_PCT)
+
+    # ── RPO ───────────────────────────────────────────────────────────────
+    dark_hdr(ws, 'A21', 'REMAINING PERFORMANCE OBLIGATIONS (RPO)', merged_end='G21')
+    label(ws, 'A22', 'Total RPO',             indent=2)
+    label(ws, 'A23', 'Current RPO (cRPO)',    indent=2)
+    label(ws, 'A24', 'Non-Current RPO',       indent=3, italic=True)
+    label(ws, 'A25', 'cRPO / Total RPO %',   indent=3, italic=True)
+    label(ws, 'A26', 'Total RPO Growth %',   indent=3, italic=True)
+
+    hist_rpo  = [13600, 17700, 21900]
+    hist_crpo = [7000,  8300,  10300]
+
+    for i, col in enumerate(HIST_COLS):
+        inp(ws, f'{col}22', hist_rpo[i])
+        inp(ws, f'{col}23', hist_crpo[i])
+        frm(ws, f'{col}24', f'={col}22-{col}23', italic=True)
+        frm(ws, f'{col}25', f'={col}23/{col}22', fmt=FMT_PCT, italic=True)
+        if i > 0:
+            frm(ws, f'{col}26', f'={col}22/{HIST_COLS[i-1]}22-1', fmt=FMT_PCT, italic=True)
+
+    prev = 'D'
+    for col in PROJ_COLS:
+        ac = proj_assump_col(col)
+        lnk(ws, f'{col}22', f'={prev}22*(1+Assumptions!${ac}$51)')
+        lnk(ws, f'{col}23', f'={col}22*Assumptions!${ac}$52')
+        frm(ws, f'{col}24', f'={col}22-{col}23', italic=True)
+        frm(ws, f'{col}25', f'={col}23/{col}22', fmt=FMT_PCT, italic=True)
+        frm(ws, f'{col}26', f'={col}22/{prev}22-1', fmt=FMT_PCT, italic=True)
+        prev = col
+
+    # ── CUSTOMER METRICS ──────────────────────────────────────────────────
+    dark_hdr(ws, 'A28', 'CUSTOMER METRICS — BY ACV TIER', merged_end='G28')
+    label(ws, 'A29', 'Customers > $1M ACV',          indent=2)
+    label(ws, 'A30', 'Customers > $5M ACV',          indent=2)
+    label(ws, 'A31', 'Customers > $20M ACV',         indent=2)
+    label(ws, 'A32', 'Total Enterprise Customers',   indent=2)
+    label(ws, 'A33', 'YoY Growth — Customers >$1M',  indent=3, italic=True)
+    label(ws, 'A34', 'YoY Growth — Customers >$5M',  indent=3, italic=True)
+
+    hist_1m  = [1530, 1986, 2550]
+    hist_5m  = [156,  197,  243]
+    hist_20m = [74,   92,   114]
+    hist_ent = [7400, 8100, 8800]
+    fmt_int  = '#,##0'
+
+    for i, col in enumerate(HIST_COLS):
+        inp(ws, f'{col}29', hist_1m[i],  fmt=fmt_int)
+        inp(ws, f'{col}30', hist_5m[i],  fmt=fmt_int)
+        inp(ws, f'{col}31', hist_20m[i], fmt=fmt_int)
+        inp(ws, f'{col}32', hist_ent[i], fmt=fmt_int)
+        if i > 0:
+            frm(ws, f'{col}33', f'={col}29/{HIST_COLS[i-1]}29-1', fmt=FMT_PCT, italic=True)
+            frm(ws, f'{col}34', f'={col}30/{HIST_COLS[i-1]}30-1', fmt=FMT_PCT, italic=True)
+
+    prev = 'D'
+    for col in PROJ_COLS:
+        ac = proj_assump_col(col)
+        lnk(ws, f'{col}29', f'={prev}29*(1+Assumptions!${ac}$45)', fmt=fmt_int)
+        lnk(ws, f'{col}30', f'={prev}30*(1+Assumptions!${ac}$46)', fmt=fmt_int)
+        lnk(ws, f'{col}31', f'={prev}31*(1+Assumptions!${ac}$47)', fmt=fmt_int)
+        lnk(ws, f'{col}32', f'={prev}32*(1+Assumptions!${ac}$45*0.6)', fmt=fmt_int)
+        frm(ws, f'{col}33', f'={col}29/{prev}29-1', fmt=FMT_PCT, italic=True)
+        frm(ws, f'{col}34', f'={col}30/{prev}30-1', fmt=FMT_PCT, italic=True)
+        prev = col
+
+    # ── REVENUE METRICS ───────────────────────────────────────────────────
+    # Row 37 = Subscription Revenue anchor — IS!E5 links here
+    # Row 38 = PS Revenue anchor — IS!E6 links here
+    dark_hdr(ws, 'A36', 'REVENUE METRICS', merged_end='G36')
+    label(ws, 'A37', 'Subscription Revenue',          bold=True)
+    label(ws, 'A38', 'Professional Services Revenue', indent=2)
+    label(ws, 'A39', 'Total Revenue',                 bold=True)
+    label(ws, 'A40', 'Subscription Revenue Growth %', indent=2, italic=True)
+    label(ws, 'A41', 'Implied Billings',              indent=2, italic=True)
+
+    hist_sub = [6894, 8396, 10402]
+    hist_ps  = [586,  537,  576]
+
+    for i, col in enumerate(HIST_COLS):
+        inp(ws, f'{col}37', hist_sub[i])
+        inp(ws, f'{col}38', hist_ps[i])
+        total(ws, f'{col}39', f'={col}37+{col}38')
+        if i > 0:
+            frm(ws, f'{col}40', f'={col}37/{HIST_COLS[i-1]}37-1', fmt=FMT_PCT, italic=True)
+        frm(ws, f'{col}41', f'={col}10-{col}5+{col}37', italic=True)
+
+    prev = 'D'
+    for col in PROJ_COLS:
+        ac = proj_assump_col(col)
+        frm(ws, f'{col}37', f'={col}46')           # feeds from ARR Bridge primary below
+        lnk(ws, f'{col}38', f'={col}37*Assumptions!${ac}$55')
+        total(ws, f'{col}39', f'={col}37+{col}38')
+        frm(ws, f'{col}40', f'={col}37/{prev}37-1', fmt=FMT_PCT, italic=True)
+        frm(ws, f'{col}41', f'={col}10-{col}5+{col}37', italic=True)
+        prev = col
+
+    # ── PRIMARY METHODOLOGY: ARR Bridge ───────────────────────────────────
+    dark_hdr(ws, 'A43', 'PRIMARY FORECAST METHODOLOGY: ARR Bridge', merged_end='G43')
+    label(ws, 'A44', 'Average ARR ((Beg + End) / 2)', indent=2, italic=True)
+    label(ws, 'A45', 'Billing Timing Factor',          indent=2)
+    label(ws, 'A46', 'Projected Subscription Revenue', bold=True)
+
+    for i, col in enumerate(HIST_COLS):
+        frm(ws, f'{col}44', f'=({col}5+{col}10)/2', italic=True)
+        frm(ws, f'{col}45', f'={col}37/{col}44')   # implied BTF from actuals
+        total(ws, f'{col}46', f'={col}44*{col}45') # = actual sub rev for historicals
+
+    for col in PROJ_COLS:
+        ac = proj_assump_col(col)
+        frm(ws, f'{col}44', f'=({col}5+{col}10)/2', italic=True)
+        lnk(ws, f'{col}45', f'=Assumptions!${ac}$38')
+        total(ws, f'{col}46', f'={col}44*{col}45')
+
+    # ── CROSS-CHECK A: NRR-Based ──────────────────────────────────────────
+    light_hdr(ws, 'A48', 'CROSS-CHECK A — NRR-Based Methodology', merged_end='G48')
+    label(ws, 'A49', 'Beginning ARR',                      indent=2, italic=True)
+    label(ws, 'A50', 'Existing Customer ARR (Beg × NRR)',  indent=2, italic=True)
+    label(ws, 'A51', '+ New Logo ARR',                     indent=2, italic=True)
+    label(ws, 'A52', 'Ending ARR (NRR method)',            indent=2, italic=True)
+    label(ws, 'A53', 'Average ARR',                        indent=2, italic=True)
+    label(ws, 'A54', 'Sub Revenue (NRR method)',           bold=True, italic=True)
+
+    for col in DATA_COLS:
+        frm(ws, f'{col}49', f'={col}5',             italic=True)
+        frm(ws, f'{col}50', f'={col}5*{col}16',     italic=True)
+        frm(ws, f'{col}51', f'={col}6',             italic=True)
+        frm(ws, f'{col}52', f'={col}50+{col}51',    italic=True)
+        frm(ws, f'{col}53', f'=({col}5+{col}52)/2', italic=True)
+        frm(ws, f'{col}54', f'={col}53*{col}45',    italic=True)
+
+    # ── CROSS-CHECK B: RPO-Anchored ───────────────────────────────────────
+    light_hdr(ws, 'A56', 'CROSS-CHECK B — RPO-Anchored Methodology', merged_end='G56')
+    label(ws, 'A57', 'cRPO — prior year-end',         indent=2, italic=True)
+    label(ws, 'A58', 'Recognition Rate %',            indent=2)
+    label(ws, 'A59', 'Sub Revenue (RPO method)',      bold=True, italic=True)
+
+    inp(ws, 'B57', 5800)  # FY2021 cRPO estimate (pre-period)
+    for i, col in enumerate(DATA_COLS):
+        if col != 'B':
+            frm(ws, f'{col}57', f'={DATA_COLS[i-1]}23', italic=True)
+        if col in HIST_COLS:
+            frm(ws, f'{col}58', f'={col}37/{col}57', fmt=FMT_PCT)  # implied recog rate
+        else:
+            ac = proj_assump_col(col)
+            lnk(ws, f'{col}58', f'=Assumptions!${ac}$50', fmt=FMT_PCT)
+        frm(ws, f'{col}59', f'={col}57*{col}58', italic=True)
+
+    # ── CROSS-CHECK COMPARISON ─────────────────────────────────────────────
+    light_hdr(ws, 'A61', 'METHODOLOGY COMPARISON', merged_end='G61')
+    label(ws, 'A62', 'Primary — ARR Bridge',          indent=2)
+    label(ws, 'A63', 'Cross-Check A — NRR-Based',     indent=2)
+    label(ws, 'A64', 'Cross-Check B — RPO-Anchored',  indent=2)
+    label(ws, 'A65', 'NRR vs. Primary Δ %',           indent=3, italic=True)
+    label(ws, 'A66', 'RPO vs. Primary Δ %',           indent=3, italic=True)
+    label(ws, 'A67', 'NRR flag: |delta| > 15%',       indent=3, italic=True)
+    label(ws, 'A68', 'RPO flag: |delta| > 15%',       indent=3, italic=True)
+
+    for col in DATA_COLS:
+        frm(ws, f'{col}62', f'={col}46')
+        frm(ws, f'{col}63', f'={col}54')
+        frm(ws, f'{col}64', f'={col}59')
+        frm(ws, f'{col}65', f'={col}63/{col}62-1', fmt=FMT_PCT, italic=True)
+        frm(ws, f'{col}66', f'={col}64/{col}62-1', fmt=FMT_PCT, italic=True)
+        frm(ws, f'{col}67', f'=IF(ABS({col}65)>0.15,"FLAG","OK")', italic=True)
+        frm(ws, f'{col}68', f'=IF(ABS({col}66)>0.15,"FLAG","OK")', italic=True)
+
+    add_hist_proj_border(ws, 1, 70)
+    ws.freeze_panes = 'B4'
+
+
 # ---------------------------------------------------------------------------
 # Assumptions sheet
 # ---------------------------------------------------------------------------
@@ -191,14 +456,14 @@ def build_assumptions(ws):
     dark_hdr(ws, 'A4', 'INCOME STATEMENT DRIVERS', merged_end='D4')
 
     rows = [
-        (5,  'Revenue Growth Rate',     0.220, 0.190, 0.170, FMT_PCT),
-        (6,  'Gross Margin %',          0.795, 0.800, 0.805, FMT_PCT),
-        (7,  "R&D % of Revenue",        0.230, 0.225, 0.220, FMT_PCT),
-        (8,  "S&M % of Revenue",        0.220, 0.215, 0.210, FMT_PCT),
-        (9,  "G&A % of Revenue",        0.060, 0.058, 0.056, FMT_PCT),
-        (10, 'Tax Rate',                0.180, 0.180, 0.180, FMT_PCT),
-        (11, "D&A % of Revenue",        0.070, 0.068, 0.065, FMT_PCT),
-        (12, "SBC % of Revenue",        0.135, 0.130, 0.125, FMT_PCT),
+        (5,  'Revenue Growth Rate (Memo)',  0.220, 0.190, 0.170, FMT_PCT),
+        (6,  'Gross Margin %',             0.795, 0.800, 0.805, FMT_PCT),
+        (7,  "R&D % of Revenue",           0.230, 0.225, 0.220, FMT_PCT),
+        (8,  "S&M % of Revenue",           0.220, 0.215, 0.210, FMT_PCT),
+        (9,  "G&A % of Revenue",           0.060, 0.058, 0.056, FMT_PCT),
+        (10, 'Tax Rate',                   0.180, 0.180, 0.180, FMT_PCT),
+        (11, "D&A % of Revenue",           0.070, 0.068, 0.065, FMT_PCT),
+        (12, "SBC % of Revenue",           0.135, 0.130, 0.125, FMT_PCT),
     ]
     for r, lbl, v25, v26, v27, fmt in rows:
         label(ws, f'A{r}', lbl, indent=1)
@@ -238,6 +503,68 @@ def build_assumptions(ws):
         inp(ws, f'C{r}', v26, fmt=FMT_DOLLAR)
         inp(ws, f'D{r}', v27, fmt=FMT_DOLLAR)
 
+    # ── SOFTWARE REVENUE DRIVERS ──────────────────────────────────────────
+    dark_hdr(ws, 'A27', 'SOFTWARE REVENUE DRIVERS', merged_end='D27')
+
+    light_hdr(ws, 'A29', 'ARR BRIDGE ASSUMPTIONS', merged_end='D29')
+    # Row 30: methodology selector (label only)
+    label(ws, 'A30', 'Primary Methodology: ARR Bridge', indent=1, italic=True)
+
+    sw_arr = [
+        # row, label, FY25, FY26, FY27, fmt
+        (34, 'New Logo ARR Growth % YoY',             0.200, 0.180, 0.160, FMT_PCT),
+        (35, 'Expansion Rate (% of Beginning ARR)',   0.240, 0.230, 0.220, FMT_PCT),
+        (36, 'Gross Revenue Retention (GRR) %',       0.990, 0.990, 0.990, FMT_PCT),
+        (37, 'Contraction Rate (% of Beginning ARR)', 0.003, 0.003, 0.003, FMT_PCT),
+        (38, 'Billing Timing Factor',                 0.980, 0.980, 0.980, '0.000'),
+    ]
+    for r, lbl, v25, v26, v27, fmt in sw_arr:
+        label(ws, f'A{r}', lbl, indent=1)
+        inp(ws, f'B{r}', v25, fmt=fmt)
+        inp(ws, f'C{r}', v26, fmt=fmt)
+        inp(ws, f'D{r}', v27, fmt=fmt)
+
+    light_hdr(ws, 'A40', 'RETENTION-BASED ASSUMPTIONS', merged_end='D40')
+    sw_ret = [
+        (41, 'Net Revenue Retention (NRR) %',  1.240, 1.230, 1.220, FMT_PCT),
+        (42, 'Logo Churn Rate %',              0.030, 0.030, 0.030, FMT_PCT),
+    ]
+    for r, lbl, v25, v26, v27, fmt in sw_ret:
+        label(ws, f'A{r}', lbl, indent=1)
+        inp(ws, f'B{r}', v25, fmt=fmt)
+        inp(ws, f'C{r}', v26, fmt=fmt)
+        inp(ws, f'D{r}', v27, fmt=fmt)
+
+    light_hdr(ws, 'A44', 'CUSTOMER TIER GROWTH', merged_end='D44')
+    sw_cust = [
+        (45, 'Customers >$1M ACV Growth %',   0.200, 0.180, 0.160, FMT_PCT),
+        (46, 'Customers >$5M ACV Growth %',   0.180, 0.160, 0.150, FMT_PCT),
+        (47, 'Customers >$20M ACV Growth %',  0.150, 0.140, 0.130, FMT_PCT),
+    ]
+    for r, lbl, v25, v26, v27, fmt in sw_cust:
+        label(ws, f'A{r}', lbl, indent=1)
+        inp(ws, f'B{r}', v25, fmt=fmt)
+        inp(ws, f'C{r}', v26, fmt=fmt)
+        inp(ws, f'D{r}', v27, fmt=fmt)
+
+    light_hdr(ws, 'A49', 'RPO ASSUMPTIONS', merged_end='D49')
+    sw_rpo = [
+        (50, 'cRPO Recognition Rate (next 12 months)', 0.940, 0.940, 0.940, FMT_PCT),
+        (51, 'Total RPO Growth %',                     0.180, 0.160, 0.140, FMT_PCT),
+        (52, 'cRPO as % of Total RPO',                 0.470, 0.470, 0.470, FMT_PCT),
+    ]
+    for r, lbl, v25, v26, v27, fmt in sw_rpo:
+        label(ws, f'A{r}', lbl, indent=1)
+        inp(ws, f'B{r}', v25, fmt=fmt)
+        inp(ws, f'C{r}', v26, fmt=fmt)
+        inp(ws, f'D{r}', v27, fmt=fmt)
+
+    light_hdr(ws, 'A54', 'PROFESSIONAL SERVICES', merged_end='D54')
+    label(ws, 'A55', 'PS Revenue as % of Subscription Revenue', indent=1)
+    inp(ws, 'B55', 0.050, fmt=FMT_PCT)
+    inp(ws, 'C55', 0.048, fmt=FMT_PCT)
+    inp(ws, 'D55', 0.046, fmt=FMT_PCT)
+
     ws.freeze_panes = 'B4'
 
 
@@ -270,14 +597,13 @@ def build_IS(ws):
             prev = HIST_COLS[i-1]
             frm(ws, f'{col}8', f'={col}7/{prev}7-1', fmt=FMT_PCT, italic=True)
 
-    # Projections — total revenue drives growth; PS is residual
-    proj_assump = ['B', 'C', 'D']  # Assumptions col per projection year
+    # Projections — revenue linked from revenue_build (3-statement-model-software skill)
+    proj_assump = ['B', 'C', 'D']  # Assumptions col map (used for COGS/OpEx below)
     prev_col = 'D'
-    for i, col in enumerate(PROJ_COLS):
-        ac = proj_assump[i]
-        lnk(ws, f'{col}7', f'={prev_col}7*(1+Assumptions!${ac}$5)', bold=True)
-        lnk(ws, f'{col}5', f'={prev_col}5*(1+Assumptions!${ac}$5)')
-        frm(ws, f'{col}6', f'={col}7-{col}5')
+    for col in PROJ_COLS:
+        lnk(ws, f'{col}5', f'=revenue_build!{col}37')
+        lnk(ws, f'{col}6', f'=revenue_build!{col}38')
+        total(ws, f'{col}7', f'={col}5+{col}6')
         frm(ws, f'{col}8', f'={col}7/{prev_col}7-1', fmt=FMT_PCT, italic=True)
         prev_col = col
 
@@ -301,9 +627,7 @@ def build_IS(ws):
     prev_col = 'D'
     for i, col in enumerate(PROJ_COLS):
         ac = proj_assump[i]
-        # COGS = revenue * (1 - gross margin)
         lnk(ws, f'{col}13', f'={col}7*(1-Assumptions!${ac}$6)', bold=True)
-        # Split CoR: sub ~75%, PS ~25% of total CoR
         frm(ws, f'{col}11', f'={col}13*0.75')
         frm(ws, f'{col}12', f'={col}13*0.25')
         total(ws, f'{col}14', f'={col}7-{col}13')
@@ -366,14 +690,14 @@ def build_IS(ws):
         total(ws, f'{col}33', f'={col}30+{col}31+{col}32')
 
     for col in PROJ_COLS:
-        inp(ws, f'{col}30', 478)           # flat interest income assumption
+        inp(ws, f'{col}30', 478)
         lnk(ws, f'{col}31', f'=Debt!{col}14')
         inp(ws, f'{col}32', 0)
         total(ws, f'{col}33', f'={col}30+{col}31+{col}32')
 
     # ---- PRE-TAX / TAX / NET INCOME ----
     label(ws, 'A35', 'Pre-Tax Income', bold=True)
-    label(ws, 'A36', blank := '', italic=True)
+    label(ws, 'A36', '', italic=True)
     label(ws, 'A37', 'Income Tax Provision', indent=2)
     label(ws, 'A38', 'Effective Tax Rate %', indent=3, italic=True)
     label(ws, 'A40', 'Net Income', bold=True)
@@ -455,12 +779,13 @@ def build_BS(ws):
         for i, col in enumerate(HIST_COLS):
             inp(ws, f'{col}{row}', vals[i])
 
+    proj_assump = ['B', 'C', 'D']
+
     # Cash projection: links from CF ending cash (row 30)
     for col in PROJ_COLS:
         lnk(ws, f'{col}6', f'=CF!{col}30', bold=False)
 
     # Short-term investments: grow at half revenue growth rate
-    proj_assump = ['B', 'C', 'D']
     prev = 'D'
     for i, col in enumerate(PROJ_COLS):
         ac = proj_assump[i]
@@ -707,7 +1032,7 @@ def build_CF(ws):
         lnk(ws, f'{col}5',  f'=IS!{col}40')
         lnk(ws, f'{col}6',  f'=IS!{col}44')
         lnk(ws, f'{col}7',  f'=IS!{col}46')
-        lnk(ws, f'{col}8',  f'=-(WC!{col}8-WC!{col[0]}{chr(ord(col[0])-1) if col != "E" else "D"}8)')
+        lnk(ws, f'{col}8',  f'=-(WC!{col}8-WC!{_prev(col)}8)')
         lnk(ws, f'{col}9',  f'=(BS!{col}26+BS!{col}31)-(BS!{_prev(col)}26+BS!{_prev(col)}31)')
         lnk(ws, f'{col}10', f'=(WC!{col}15-WC!{_prev(col)}15)+(BS!{col}25-BS!{_prev(col)}25)')
         frm(ws, f'{col}11', f'=-(BS!{col}10-BS!{_prev(col)}10)*0.5')
@@ -791,11 +1116,6 @@ def build_CF(ws):
     ws.freeze_panes = 'B4'
 
 
-def _prev(col):
-    """Return the previous column letter (E->D, F->E, G->F)."""
-    return get_column_letter(column_index_from_string(col) - 1)
-
-
 # ---------------------------------------------------------------------------
 # WC — Working Capital Schedule
 # ---------------------------------------------------------------------------
@@ -867,11 +1187,6 @@ def build_WC(ws):
     ws.freeze_panes = 'B4'
 
 
-def proj_assump_col(proj_col):
-    """Map projection col (E/F/G) to Assumptions col (B/C/D)."""
-    return {'E': 'B', 'F': 'C', 'G': 'D'}[proj_col]
-
-
 # ---------------------------------------------------------------------------
 # DA — Depreciation & Amortization Schedule
 # ---------------------------------------------------------------------------
@@ -906,7 +1221,6 @@ def build_DA(ws):
     inp(ws, 'B9', 760)
     lnk(ws, 'C9', '=B11')
     lnk(ws, 'D9', '=C11')
-    hist_da = [513, 613, 750]
     for i, col in enumerate(HIST_COLS):
         lnk(ws, f'{col}10', f'=IS!{col}44')
         total(ws, f'{col}11', f'={col}9+{col}10')
@@ -995,7 +1309,7 @@ def build_Debt(ws):
 
 def build_Checks(ws):
     ws.sheet_properties.tabColor = "FF0000"
-    set_col_widths(ws, {'A': 48, 'B': 14, 'C': 14, 'D': 16, 'E': 14})
+    set_col_widths(ws, {'A': 52, 'B': 14, 'C': 14, 'D': 16, 'E': 14})
 
     dark_hdr(ws, 'A1', 'MODEL INTEGRITY CHECKS — SERVICENOW', merged_end='E1')
     subtitle(ws, 'A2', 'GREEN = pass (TRUE), RED = fail (FALSE). Historical BS checks may show small discrepancies from rounded inputs.')
@@ -1053,11 +1367,42 @@ def build_Checks(ws):
                   f'=BS!{col}40-(BS!{prev_col}40+IS!{col}40+Assumptions!${ac}$22)',
                   f'=IF(ABS(D{r})<1,"TRUE","FALSE")')
 
-    # Master Status
-    r = 39
+    # ── SOFTWARE CHECKS ───────────────────────────────────────────────────
+    dark_hdr(ws, 'A40', 'SOFTWARE — IS REVENUE LINKS (revenue_build → IS)', merged_end='E40')
+    proj_periods = [('E','FY2025E'), ('F','FY2026E'), ('G','FY2027E')]
+    for i, (col, period) in enumerate(proj_periods):
+        r = 41 + i
+        check_row(r, f'IS Sub Rev = rb Sub Rev — {period}', 0, 'IS row 5 = rb row 37',
+                  f'=IS!{col}5-revenue_build!{col}37',
+                  f'=IF(ABS(D{r})<0.01,"TRUE","FALSE")')
+    for i, (col, period) in enumerate(proj_periods):
+        r = 44 + i
+        check_row(r, f'IS PS Rev = rb PS Rev — {period}', 0, 'IS row 6 = rb row 38',
+                  f'=IS!{col}6-revenue_build!{col}38',
+                  f'=IF(ABS(D{r})<0.01,"TRUE","FALSE")')
+
+    dark_hdr(ws, 'A48', 'SOFTWARE — ARR BRIDGE & KPI CHECKS', merged_end='E48')
+    for i, (col, period) in enumerate(proj_periods):
+        r = 49 + i
+        check_row(r, f'ARR Bridge Balances — {period}', 0, 'Ending ARR = sum of components',
+                  f'=revenue_build!{col}10-(revenue_build!{col}5+revenue_build!{col}6+revenue_build!{col}7+revenue_build!{col}8+revenue_build!{col}9)',
+                  f'=IF(ABS(D{r})<0.01,"TRUE","FALSE")')
+
+    check_row(52, 'GRR <= 100% — FY2025E', 1, 'GRR cannot exceed 100%',
+              '=revenue_build!E15',
+              '=IF(revenue_build!E15<=1,"TRUE","FALSE")')
+    check_row(53, 'NRR >= GRR — FY2025E', '', 'expansion included in NRR',
+              '=revenue_build!E16-revenue_build!E15',
+              '=IF(revenue_build!E16>=revenue_build!E15,"TRUE","FALSE")')
+    check_row(54, 'cRPO <= Total RPO — FY2025E', '', 'current portion <= total',
+              '=revenue_build!E23-revenue_build!E22',
+              '=IF(revenue_build!E23<=revenue_build!E22,"TRUE","FALSE")')
+
+    # Master Status (extended range to include software checks)
+    r = 57
     ws.merge_cells(f'A{r}:D{r}')
     c = ws[f'A{r}']
-    c.value = '=IF(COUNTIF(E6:E37,"FALSE")=0,"✓  ALL CHECKS PASS","✗  "&COUNTIF(E6:E37,"FALSE")&" CHECK(S) FAILING")'
+    c.value = '=IF(COUNTIF(E6:E54,"FALSE")=0,"✓  ALL CHECKS PASS","✗  "&COUNTIF(E6:E54,"FALSE")&" CHECK(S) FAILING")'
     c.font = _font(WHITE, bold=True, size=11)
     c.fill = _fill(DARK_BLUE)
     c.alignment = _center()
@@ -1066,12 +1411,12 @@ def build_Checks(ws):
     green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
     red_fill   = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
     ws.conditional_formatting.add(
-        "E6:E37",
+        "E6:E54",
         CellIsRule(operator="equal", formula=['"TRUE"'], fill=green_fill,
                    font=Font(color="375623"))
     )
     ws.conditional_formatting.add(
-        "E6:E37",
+        "E6:E54",
         CellIsRule(operator="equal", formula=['"FALSE"'], fill=red_fill,
                    font=Font(color="9C0006"))
     )
@@ -1087,7 +1432,8 @@ def main():
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     wb = Workbook()
-    ws_is     = wb.active;          ws_is.title = "IS"
+    ws_rb     = wb.active;            ws_rb.title = "revenue_build"
+    ws_is     = wb.create_sheet("IS")
     ws_bs     = wb.create_sheet("BS")
     ws_cf     = wb.create_sheet("CF")
     ws_wc     = wb.create_sheet("WC")
@@ -1096,6 +1442,7 @@ def main():
     ws_assump = wb.create_sheet("Assumptions")
     ws_checks = wb.create_sheet("Checks")
 
+    build_revenue_build(ws_rb)
     build_assumptions(ws_assump)
     build_IS(ws_is)
     build_BS(ws_bs)
