@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: install validation deps
-        run: python3 -m pip install pyyaml jsonschema anthropic
+        run: python3 -m pip install -r requirements-dev.txt
       - name: check manifests
         run: python3 scripts/check.py
       - name: dry-run managed-agent cookbooks
