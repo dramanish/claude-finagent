@@ -15,6 +15,7 @@ Exit 0 if clean, 1 otherwise. Requires: pyyaml.
 import json
 import sys
 from pathlib import Path
+import pandas as pd
 
 try:
     import yaml
