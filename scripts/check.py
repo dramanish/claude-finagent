@@ -5,10 +5,11 @@ Lint all plugin + managed-agent manifests and verify cross-file references.
 Checks:
   1. Every *.yaml under managed-agents/ parses.
   2. Every plugin.json / marketplace.json / steering-examples.json parses.
-  3. Every <vertical>/agents/*.md has valid YAML frontmatter with name + description.
-  4. Every system.file, skills[].path, callable_agents[].manifest in agent.yaml
+  3. Every agent plugin agents/*.md has valid YAML frontmatter with name + description.
+  4. Every plugin skill SKILL.md has valid YAML frontmatter with description.
+  5. Every system.file, skills[].path, callable_agents[].manifest in agent.yaml
      and subagent yamls resolves to an existing file/dir.
-  5. Every managed-agents/<slug>/ has agent.yaml, README.md, steering-examples.json.
+  6. Every managed-agent-cookbooks/<slug>/ has agent.yaml, README.md, steering-examples.json.
 
 Exit 0 if clean, 1 otherwise. Requires: pyyaml.
 """
@@ -61,20 +62,29 @@ for pat in json_globs:
             err(f"JSON parse: {rel(jf)}: {e}")
 
 # --- 3. agent.md frontmatter -----------------------------------------------
-for md in sorted(PLUGINS.glob("agent-plugins/*/agents/*.md")):
+def check_frontmatter(md: Path, required: tuple[str, ...], label: str) -> None:
+    global checked
     checked += 1
     text = md.read_text()
     if not text.startswith("---"):
-        err(f"frontmatter: {rel(md)}: missing leading ---")
-        continue
+        err(f"{label}: {rel(md)}: missing leading ---")
+        return
     try:
         _, fm, _ = text.split("---", 2)
-        meta = yaml.safe_load(fm)
-        for k in ("name", "description"):
+        meta = yaml.safe_load(fm) or {}
+        for k in required:
             if k not in meta:
-                err(f"frontmatter: {rel(md)}: missing '{k}'")
+                err(f"{label}: {rel(md)}: missing '{k}'")
     except (ValueError, yaml.YAMLError) as e:
-        err(f"frontmatter: {rel(md)}: {e}")
+        err(f"{label}: {rel(md)}: {e}")
+
+
+for md in sorted(PLUGINS.glob("agent-plugins/*/agents/*.md")):
+    check_frontmatter(md, ("name", "description"), "frontmatter")
+
+# --- 3b. skill frontmatter --------------------------------------------------
+for md in sorted(PLUGINS.glob("**/skills/*/SKILL.md")):
+    check_frontmatter(md, ("description",), "skill-frontmatter")
 
 
 # --- 4. reference resolution -----------------------------------------------
