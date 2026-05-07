@@ -360,18 +360,31 @@ def gmail_draft(summary_text: str):
         return
 
     subject = f"LK Group QSR Digest — {TODAY}"
+
+    # Strip LOG: lines, stage banners, and empty noise — keep findings only
+    skip_prefixes = ("LOG:", "══", "──", "▶", "🔍", "🧠", "✍️", "STAGE")
     body_lines = []
     for line in summary_text.splitlines():
-        if line.startswith("Subject:"):
-            subject = line.replace("Subject:", "").strip()
-        else:
-            body_lines.append(line)
+        stripped = line.strip()
+        if not stripped:
+            body_lines.append("")
+            continue
+        if stripped.startswith("Subject:"):
+            subject = stripped.replace("Subject:", "").strip()
+            continue
+        if any(stripped.startswith(p) for p in skip_prefixes):
+            continue
+        body_lines.append(stripped)
+
+    body = "\n".join(body_lines).strip()
+    if not body:
+        body = f"QSR Digest complete — {TODAY}. See attached Word document for full findings."
 
     msg = email.message.EmailMessage()
     msg["To"]      = to_email
     msg["From"]    = to_email
     msg["Subject"] = subject
-    msg.set_content("\n".join(body_lines))
+    msg.set_content(body)
 
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
     service.users().drafts().create(userId="me", body={"message": {"raw": raw}}).execute()
