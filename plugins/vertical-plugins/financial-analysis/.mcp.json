@@ -1,48 +1,21 @@
 {
   "mcpServers": {
-    "daloopa": {
+    "microsoft-365": {
       "type": "http",
-      "url": "https://mcp.daloopa.com/server/mcp"
-    },
-    "morningstar": {
-      "type": "http",
-      "url": "https://mcp.morningstar.com/mcp"
-    },
-    "sp-global": {
-      "type": "http",
-      "url": "https://kfinance.kensho.com/integrations/mcp"
-    },
-    "factset": {
-      "type": "http",
-      "url": "https://mcp.factset.com/mcp"
-    },
-    "moodys": {
-      "type": "http",
-      "url": "https://api.moodys.com/genai-ready-data/m1/mcp"
-    },
-    "mtnewswire": {
-      "type": "http",
-      "url": "https://vast-mcp.blueskyapi.com/mtnewswires"
-    },
-    "aiera": {
-      "type": "http",
-      "url": "https://mcp-pub.aiera.com"
-    },
-    "lseg": {
-      "type": "http",
-      "url": "https://api.analytics.lseg.com/lfa/mcp"
-    },
-    "pitchbook": {
-      "type": "http",
-      "url": "https://premium.mcp.pitchbook.com/mcp"
-    },
-    "chronograph": {
-      "type": "http",
-      "url": "https://ai.chronograph.pe/mcp"
-    },
-    "egnyte": {
-      "type": "http",
-      "url": "https://mcp-server.egnyte.com/mcp"
+      "url": "https://microsoft365.mcp.claude.com/mcp"
     }
+  },
+  "_fintegrity_notes": {
+    "removed_from_upstream": [
+      "daloopa", "morningstar", "spglobal", "factset", "moodys",
+      "mtnewswires", "aiera", "lseg", "pitchbook", "chronograph", "egnyte"
+    ],
+    "removal_rationale": "These are US/UK institutional-data providers. None apply to Fintegrity's CFOaaS work for Nordic SMEs. Re-add only if a specific client engagement requires the underlying subscription.",
+    "planned_additions": [
+      "fintegrity-fabric — Custom MCP server against the Fabric semantic model (medallion gold layer per client). Uses Entra OBO for client isolation. Add when the server is deployed.",
+      "fortnox — Direct Fortnox API access for live bookkeeping queries. Pending an MCP wrapper around the Fortnox REST API.",
+      "kleer — Activity and cost-category lookups against Kleer. Pending API access and an MCP wrapper."
+    ],
+    "format_note": "JSON does not support comments — these notes live under a leading-underscore key that consumers should ignore. Move planned additions into mcpServers as they ship."
   }
 }

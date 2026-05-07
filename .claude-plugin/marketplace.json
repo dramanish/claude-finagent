@@ -1,108 +1,79 @@
 {
-  "name": "claude-for-financial-services",
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schemas/marketplace.schema.json",
+  "name": "fintegrity-plugins",
   "owner": {
-    "name": "Matt Piccolella"
+    "name": "Fintegrity AB",
+    "email": "petter@fintegrity.se",
+    "url": "https://fintegrity.se"
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "description": "Fintegrity's Claude Cowork plugin marketplace — CFOaaS workflows, Swedish accounting conventions, and integrations against the Fintegrity Fabric data platform. Forked from anthropics/financial-services, scoped to verticals and agents that map to our actual practice."
   },
   "plugins": [
     {
       "name": "financial-analysis",
       "source": "./plugins/vertical-plugins/financial-analysis",
-      "description": "Core financial modeling and analysis tools: DCF, comps, LBO, 3-statement models, competitive analysis, and deck QC"
-    },
-    {
-      "name": "investment-banking",
-      "source": "./plugins/vertical-plugins/investment-banking",
-      "description": "Investment banking productivity tools - client and market insights, deck creation, financial analysis, and transaction management"
-    },
-    {
-      "name": "equity-research",
-      "source": "./plugins/vertical-plugins/equity-research",
-      "description": "Equity research tools: earnings analysis, initiating coverage reports, and research workflows"
-    },
-    {
-      "name": "private-equity",
-      "source": "./plugins/vertical-plugins/private-equity",
-      "description": "Private equity deal sourcing and workflow tools: company discovery, CRM integration, and founder outreach"
-    },
-    {
-      "name": "wealth-management",
-      "source": "./plugins/vertical-plugins/wealth-management",
-      "description": "Wealth management and financial advisory tools: client reviews, financial planning, portfolio analysis, and client reporting"
+      "description": "Core vertical. Modeling (comps, DCF, LBO, 3-statement), Excel audit, deck QC. Holds the shared MCP connectors that the other plugins draw on. Install first — every other plugin depends on this.",
+      "version": "0.1.0",
+      "category": "core",
+      "keywords": ["modeling", "dcf", "comps", "lbo", "excel", "deck-qc"]
     },
     {
       "name": "fund-admin",
       "source": "./plugins/vertical-plugins/fund-admin",
-      "description": "Fund administration and finance ops: GL reconciliation, break tracing, accruals, roll-forwards, variance commentary, NAV tie-out"
+      "description": "GL reconciliation, break tracing, accruals, roll-forwards, variance commentary, NAV tie-out. The bread-and-butter of CFOaaS — directly maps to our month-end and forensic P&L work (Sourcian, Modulai, Ciencia).",
+      "version": "0.1.0",
+      "category": "operations",
+      "keywords": ["gl-reconciliation", "month-end", "accruals", "variance", "fortnox", "kleer"]
     },
     {
-      "name": "operations",
-      "source": "./plugins/vertical-plugins/operations",
-      "description": "Operational workflows: KYC document parsing and rules-grid evaluation"
-    },
-    {
-      "name": "pitch-agent",
-      "source": "./plugins/agent-plugins/pitch-agent",
-      "description": "Comps, precedents, LBO to a branded pitch deck, end to end"
-    },
-    {
-      "name": "market-researcher",
-      "source": "./plugins/agent-plugins/market-researcher",
-      "description": "Sector or theme to industry overview, competitive landscape, peer comps, and ideas shortlist"
-    },
-    {
-      "name": "earnings-reviewer",
-      "source": "./plugins/agent-plugins/earnings-reviewer",
-      "description": "Earnings call and filings to model update to note draft"
-    },
-    {
-      "name": "meeting-prep-agent",
-      "source": "./plugins/agent-plugins/meeting-prep-agent",
-      "description": "Briefing pack before every client meeting"
-    },
-    {
-      "name": "model-builder",
-      "source": "./plugins/agent-plugins/model-builder",
-      "description": "DCF, LBO, 3-statement, comps - live in Excel"
+      "name": "private-equity",
+      "source": "./plugins/vertical-plugins/private-equity",
+      "description": "Deal sourcing, due diligence checklists, IC memos, unit economics, returns analysis, portfolio KPI tracking. Used for buy-side advisory and exit-structuring work.",
+      "version": "0.1.0",
+      "category": "advisory",
+      "keywords": ["due-diligence", "ic-memo", "m&a", "portfolio-monitoring", "exit-structuring"]
     },
     {
       "name": "gl-reconciler",
       "source": "./plugins/agent-plugins/gl-reconciler",
-      "description": "Finds breaks, traces root cause, routes for sign-off"
-    },
-    {
-      "name": "kyc-screener",
-      "source": "./plugins/agent-plugins/kyc-screener",
-      "description": "Parses onboarding docs, runs the rules engine, flags gaps"
-    },
-    {
-      "name": "valuation-reviewer",
-      "source": "./plugins/agent-plugins/valuation-reviewer",
-      "description": "Ingests GP packages, runs valuation template, stages LP reporting"
+      "description": "Named agent. Finds GL breaks, traces root cause, routes for sign-off. Direct fit for the Sourcian-style invoice-level P&L reconstruction work.",
+      "version": "0.1.0",
+      "category": "agent",
+      "keywords": ["gl", "reconciliation", "break-tracing", "agent"]
     },
     {
       "name": "month-end-closer",
       "source": "./plugins/agent-plugins/month-end-closer",
-      "description": "Accruals, roll-forwards, variance commentary"
+      "description": "Named agent. Runs accruals, roll-forwards, variance commentary at month-end. Built around continuous-close patterns.",
+      "version": "0.1.0",
+      "category": "agent",
+      "keywords": ["month-end", "accruals", "variance", "agent"]
     },
     {
       "name": "statement-auditor",
       "source": "./plugins/agent-plugins/statement-auditor",
-      "description": "Audits pre-generated LP statements before distribution"
+      "description": "Named agent. Audits financial statements before they go out. Useful for QC on year-end and DD-context statements.",
+      "version": "0.1.0",
+      "category": "agent",
+      "keywords": ["audit", "statement-qc", "year-end", "agent"]
     },
     {
-      "name": "lseg",
-      "source": "./plugins/partner-built/lseg",
-      "description": "Price bonds, analyze yield curves, evaluate FX carry trades, value options, and build macro dashboards using LSEG financial data and analytics."
+      "name": "meeting-prep-agent",
+      "source": "./plugins/agent-plugins/meeting-prep-agent",
+      "description": "Named agent. Builds a briefing pack before client meetings — pulls recent activity, flags open items, drafts talking points.",
+      "version": "0.1.0",
+      "category": "agent",
+      "keywords": ["meeting-prep", "client-advisory", "agent"]
     },
     {
-      "name": "sp-global",
-      "source": "./plugins/partner-built/spglobal",
-      "description": "S&P Global - Financial data and analytics skills including company tearsheets, earnings previews, and transaction summaries"
-    },
-    {
-      "name": "claude-for-msft-365-install",
-      "source": "./claude-for-msft-365-install",
-      "description": "Provision direct cloud access (Vertex AI, Bedrock, or LLM gateway) for the Claude Microsoft 365 add-in. Generates the customized manifest, walks through Azure admin consent, and writes per-user config via Graph extension attributes."
+      "name": "valuation-reviewer",
+      "source": "./plugins/agent-plugins/valuation-reviewer",
+      "description": "Named agent. Cross-checks valuation work against templates and peer data. Useful for DD valuation reviews and exit pricing.",
+      "version": "0.1.0",
+      "category": "agent",
+      "keywords": ["valuation", "dd", "review", "agent"]
     }
   ]
 }
