@@ -1,0 +1,52 @@
+# Statement Auditor — Apideck-backed deploy variant
+#
+# Audits LP statements before distribution. The fund-accounting NAV pack
+# usually lives in a fund admin platform; this variant lets the auditor pull
+# the *accounting-side* tie-out data (invoices, payments, ledger accounts,
+# balance sheet) from the underlying ERP via Apideck's unified accounting MCP.
+#
+# Pair this with your fund-admin NAV source — the orchestrator can fan out
+# both: NAV from the fund admin, accounting tie-out from Apideck.
+#
+# Required env vars:
+#   APIDECK_API_KEY · APIDECK_APP_ID · APIDECK_CONSUMER_ID
+
+name: statement-auditor
+model: claude-opus-4-7
+
+system:
+  file: ../../../plugins/agent-plugins/statement-auditor/agents/statement-auditor.md
+  append: |
+    You are running headless. Produce files in ./out/; do not assume an open Office document.
+
+    Accounting-side tie-out data comes from Apideck's unified accounting MCP.
+    Use the apideck-discovery and apideck-fetch skills to extract balance
+    sheet, ledger accounts, invoices, and payments for the audit period.
+    Read-only — flagger output stays in ./out/ for IR sign-off.
+
+tools:
+  - type: agent_toolset_20260401
+    default_config: { enabled: false }
+    configs:
+      - { name: read,  enabled: true }
+      - { name: grep,  enabled: true }
+      - { name: glob,  enabled: true }
+  - { type: mcp_toolset, mcp_server_name: apideck-erp, default_config: { enabled: true } }
+
+mcp_servers:
+  - type: url
+    name: apideck-erp
+    url: https://mcp.apideck.dev/mcp
+    headers:
+      x-apideck-api-key:     ${APIDECK_API_KEY}
+      x-apideck-app-id:      ${APIDECK_APP_ID}
+      x-apideck-consumer-id: ${APIDECK_CONSUMER_ID}
+
+skills:
+  - { from_plugin: ../../../plugins/agent-plugins/statement-auditor }
+  - { from_plugin: ../../../plugins/vertical-plugins/apideck-erp }
+
+callable_agents:
+  - { manifest: ../subagents/statement-reader.yaml }
+  - { manifest: ../subagents/reconciler.yaml }
+  - { manifest: ../subagents/flagger.yaml }

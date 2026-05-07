@@ -1,0 +1,56 @@
+# GL Reconciler — Apideck-backed deploy variant
+#
+# Drop-in alternative to `../agent.yaml` for teams that source GL + subledger
+# data through Apideck's unified accounting MCP instead of an internal MCP.
+# One URL, 20+ accounting systems (QuickBooks, Xero, NetSuite, Sage Intacct,
+# Microsoft Dynamics, Zoho Books, MYOB, ...).
+#
+# Read-only by default — Apideck's MCP only honors `read` scope unless
+# `write`/`destructive` are explicitly requested. The reconciler does not need
+# write, and we do not enable it here.
+#
+# Required env vars:
+#   APIDECK_API_KEY      — your Apideck API key
+#   APIDECK_APP_ID       — your Apideck application ID
+#   APIDECK_CONSUMER_ID  — the customer's Vault consumer ID
+
+name: gl-reconciler
+model: claude-opus-4-7
+
+system:
+  file: ../../../plugins/agent-plugins/gl-reconciler/agents/gl-reconciler.md
+  append: |
+    You are running headless. Produce files in ./out/; do not assume an open Office document.
+
+    Your GL and subledger feeds come from Apideck's unified accounting MCP
+    (one URL, customer's accounting system selected per request via
+    `xApideckServiceId`). Use the apideck-discovery and apideck-fetch skills
+    when extracting data — call `list_tools` before `execute_tool`, and never
+    request write or destructive scopes.
+
+tools:
+  - type: agent_toolset_20260401
+    default_config: { enabled: false }
+    configs:
+      - { name: read,  enabled: true }
+      - { name: grep,  enabled: true }
+      - { name: glob,  enabled: true }
+  - { type: mcp_toolset, mcp_server_name: apideck-erp, default_config: { enabled: true } }
+
+mcp_servers:
+  - type: url
+    name: apideck-erp
+    url: https://mcp.apideck.dev/mcp
+    headers:
+      x-apideck-api-key:     ${APIDECK_API_KEY}
+      x-apideck-app-id:      ${APIDECK_APP_ID}
+      x-apideck-consumer-id: ${APIDECK_CONSUMER_ID}
+
+skills:
+  - { from_plugin: ../../../plugins/agent-plugins/gl-reconciler }
+  - { from_plugin: ../../../plugins/vertical-plugins/apideck-erp }
+
+callable_agents:
+  - manifest: ../subagents/reader.yaml
+  - manifest: ../subagents/critic.yaml
+  - manifest: ../subagents/resolver.yaml

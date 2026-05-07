@@ -12,6 +12,20 @@ export NAV_MCP_URL=...
 ../../scripts/deploy-managed-agent.sh statement-auditor
 ```
 
+### Deploy via Apideck (unified accounting MCP, accounting-side tie-out)
+
+For accounting-side tie-out data (balance sheet, ledger accounts, invoices, payments), [Apideck's unified accounting MCP](../../plugins/vertical-plugins/apideck-erp) provides one URL across 20+ ERPs. Pair it with your fund-admin NAV source — the orchestrator can fan out both.
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export APIDECK_API_KEY=apideck_...
+export APIDECK_APP_ID=...
+export APIDECK_CONSUMER_ID=...
+../../scripts/deploy-managed-agent.sh statement-auditor --manifest ./examples/agent.apideck.yaml
+```
+
+See [`./examples/agent.apideck.yaml`](./examples/agent.apideck.yaml). Read-only — flagger output stays in `./out/` for IR sign-off.
+
 ## Steering events
 
 See [`steering-examples.json`](./steering-examples.json).

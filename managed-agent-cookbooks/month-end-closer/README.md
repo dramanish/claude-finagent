@@ -12,6 +12,20 @@ export GL_MCP_URL=...
 ../../scripts/deploy-managed-agent.sh month-end-closer
 ```
 
+### Deploy via Apideck (unified accounting MCP)
+
+For close cycles run on cloud accounting systems (QuickBooks, Xero, NetSuite, Sage Intacct, …), the GL feed can be sourced from [Apideck's unified accounting MCP](../../plugins/vertical-plugins/apideck-erp) — one URL, one set of credentials.
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export APIDECK_API_KEY=apideck_...
+export APIDECK_APP_ID=...
+export APIDECK_CONSUMER_ID=...
+../../scripts/deploy-managed-agent.sh month-end-closer --manifest ./examples/agent.apideck.yaml
+```
+
+See [`./examples/agent.apideck.yaml`](./examples/agent.apideck.yaml). Read-only — every drafted accrual or roll-forward stays in `./out/` for human posting.
+
 ## Steering events
 
 See [`steering-examples.json`](./steering-examples.json).

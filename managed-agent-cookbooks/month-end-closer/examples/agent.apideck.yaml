@@ -1,0 +1,49 @@
+# Month-End Closer — Apideck-backed deploy variant
+#
+# Drop-in alternative to `../agent.yaml` that sources the GL through Apideck's
+# unified accounting MCP. Read-only against the system of record — accruals,
+# roll-forwards, and variance commentary stage in ./out/ for human approval.
+#
+# Required env vars:
+#   APIDECK_API_KEY · APIDECK_APP_ID · APIDECK_CONSUMER_ID
+
+name: month-end-closer
+model: claude-opus-4-7
+
+system:
+  file: ../../../plugins/agent-plugins/month-end-closer/agents/month-end-closer.md
+  append: |
+    You are running headless. Produce files in ./out/; do not assume an open Office document.
+
+    Your GL feed comes from Apideck's unified accounting MCP. Use the
+    apideck-discovery and apideck-fetch skills to extract bills, invoices,
+    journal entries, ledger accounts, P&L, and balance-sheet data for the
+    close period. Read-only — every drafted accrual or roll-forward stays in
+    ./out/ for human posting.
+
+tools:
+  - type: agent_toolset_20260401
+    default_config: { enabled: false }
+    configs:
+      - { name: read,  enabled: true }
+      - { name: grep,  enabled: true }
+      - { name: glob,  enabled: true }
+  - { type: mcp_toolset, mcp_server_name: apideck-erp, default_config: { enabled: true } }
+
+mcp_servers:
+  - type: url
+    name: apideck-erp
+    url: https://mcp.apideck.dev/mcp
+    headers:
+      x-apideck-api-key:     ${APIDECK_API_KEY}
+      x-apideck-app-id:      ${APIDECK_APP_ID}
+      x-apideck-consumer-id: ${APIDECK_CONSUMER_ID}
+
+skills:
+  - { from_plugin: ../../../plugins/agent-plugins/month-end-closer }
+  - { from_plugin: ../../../plugins/vertical-plugins/apideck-erp }
+
+callable_agents:
+  - { manifest: ../subagents/ledger-reader.yaml }
+  - { manifest: ../subagents/rollforward.yaml }
+  - { manifest: ../subagents/poster.yaml }

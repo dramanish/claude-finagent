@@ -1,0 +1,9 @@
+{
+  "name": "apideck-erp",
+  "version": "0.1.0",
+  "description": "Unified ERP / accounting MCP connector via Apideck — one MCP URL, 20+ accounting systems (QuickBooks, Xero, NetSuite, Sage Intacct, Microsoft Dynamics, Zoho Books, MYOB, FreshBooks, …). Drop-in source for the GL_MCP_URL / SUBLEDGER_MCP_URL / NAV_MCP_URL slots used by gl-reconciler, month-end-closer, and statement-auditor.",
+  "author": {
+    "name": "Apideck",
+    "url": "https://www.apideck.com"
+  }
+}

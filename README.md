@@ -111,6 +111,7 @@ Start with **financial-analysis** — it carries the shared modeling skills and 
 | **[wealth-management](./plugins/vertical-plugins/wealth-management)** | Client reviews, financial plans, rebalancing, reporting, TLH. |
 | **[fund-admin](./plugins/vertical-plugins/fund-admin)** | GL recon, break tracing, accruals, roll-forwards, variance commentary, NAV tie-out. |
 | **[operations](./plugins/vertical-plugins/operations)** | KYC document parsing and rules-grid evaluation. |
+| **[apideck-erp](./plugins/vertical-plugins/apideck-erp)** | Unified ERP / accounting MCP connector — one URL for QuickBooks, Xero, NetSuite, Sage Intacct, Microsoft Dynamics, and 15+ more. Drop-in source for the GL / subledger / NAV slots used by fund-admin agents. |
 | **[lseg](./plugins/partner-built/lseg)** *(partner)* | Bond RV, swap curves, FX carry, options vol, macro-rates monitoring on LSEG data. |
 | **[sp-global](./plugins/partner-built/spglobal)** *(partner)* | Tear sheets, earnings previews, funding digests on S&P Capital IQ. |
 

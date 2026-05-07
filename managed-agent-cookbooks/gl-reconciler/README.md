@@ -15,6 +15,20 @@ export SUBLEDGER_MCP_URL=...    # read-only subledger MCP
 ../../scripts/deploy-managed-agent.sh gl-reconciler
 ```
 
+### Deploy via Apideck (unified accounting MCP)
+
+If your firm sources GL + subledger data through one or more cloud accounting systems (QuickBooks, Xero, NetSuite, Sage Intacct, Microsoft Dynamics, Zoho Books, MYOB, …), you can drop in [Apideck's unified accounting MCP](../../plugins/vertical-plugins/apideck-erp) — one URL, one set of credentials, swap the connector per customer.
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export APIDECK_API_KEY=apideck_...
+export APIDECK_APP_ID=...
+export APIDECK_CONSUMER_ID=...   # the customer's Vault consumer ID
+../../scripts/deploy-managed-agent.sh gl-reconciler --manifest ./examples/agent.apideck.yaml
+```
+
+See [`./examples/agent.apideck.yaml`](./examples/agent.apideck.yaml) for the worked manifest. Apideck is read-only by default (the reconciler doesn't need write).
+
 ## Steering events
 
 See [`steering-examples.json`](./steering-examples.json). Kick a session with a trade date and asset-class list; follow-up events can re-trace a single break.
