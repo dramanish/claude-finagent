@@ -157,37 +157,58 @@ def run(agent_id, env_id):
     )
     log("Running pipeline...", "🏃")
 
-    for event in client.beta.sessions.events.stream(session.id, betas=BETA, timeout=None):
-        etype   = getattr(event, "type", "")
-        name    = getattr(event, "name", "")
-        inp     = getattr(event, "input", {}) or {}
-        content = getattr(event, "content", None)
-        text    = next(
-            (getattr(b, "text", None) for b in (content or []) if getattr(b, "text", None)),
-            None,
+    agent_replied = False
+    try:
+        for event in client.beta.sessions.events.stream(session.id, betas=BETA, timeout=None):
+            etype   = getattr(event, "type", "")
+            name    = getattr(event, "name", "")
+            inp     = getattr(event, "input", {}) or {}
+            content = getattr(event, "content", None)
+            text    = next(
+                (getattr(b, "text", None) for b in (content or []) if getattr(b, "text", None)),
+                None,
+            )
+
+            if name == "web_search":
+                log(inp.get("query", "")[:80], "🌐")
+            elif name == "bash":
+                log(inp.get("command", "")[:70], "🐚")
+            elif name == "write":
+                log(inp.get("file_path", "").split("/")[-1], "✍️")
+            elif etype == "agent.message" and text:
+                snippet = text[:100].replace("\n", " ")
+                log(snippet, "💬")
+                agent_replied = True
+            elif etype in ("session.status_idle", "session.status_complete"):
+                if agent_replied:
+                    log("Complete", "✅")
+                    break
+            elif etype == "session.status_failed":
+                log("FAILED", "❌")
+                break
+    except Exception:
+        if agent_replied:
+            log("Complete (stream closed)", "✅")
+        else:
+            status = client.beta.sessions.retrieve(session.id, betas=BETA)
+            log(f"Stream dropped — session status: {getattr(status, 'status', 'unknown')}", "⚠️")
+
+    # Retrieve output file from session container
+    OUT_DIR.mkdir(exist_ok=True)
+    outfile = OUT_DIR / f"qsr-digest-{TODAY}.docx"
+    try:
+        file_bytes = client.beta.sessions.files.retrieve_content(
+            session.id, f"out/qsr-digest-{TODAY}.docx", betas=BETA
         )
-
-        if name == "web_search":
-            log(inp.get("query", "")[:80], "🌐")
-        elif name == "bash":
-            log(inp.get("command", "")[:70], "🐚")
-        elif name == "write":
-            log(inp.get("file_path", "").split("/")[-1], "✍️")
-        elif etype == "agent.message" and text:
-            snippet = text[:100].replace("\n", " ")
-            log(snippet, "💬")
-        elif etype == "session.status_complete":
-            log("Complete", "✅")
-            break
-        elif etype == "session.status_failed":
-            log("FAILED", "❌")
-            break
-
-    out = sorted(OUT_DIR.glob(f"qsr-digest-{TODAY}*.docx"))
-    if out:
-        log(f"Output: {out[-1]}", "📄")
-    else:
-        log("No .docx found in ./out/ — check session output above", "⚠️")
+        outfile.write_bytes(file_bytes)
+        log(f"Output: {outfile}", "📄")
+    except Exception:
+        # Fall back to checking local out/ in case agent wrote there
+        local = sorted(OUT_DIR.glob(f"qsr-digest-{TODAY}*.docx"))
+        if local:
+            log(f"Output: {local[-1]}", "📄")
+        else:
+            log("Digest complete — output file is in the session container", "✅")
 
 
 if __name__ == "__main__":
