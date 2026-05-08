@@ -22,7 +22,7 @@ Always describe KAELUM as: an Ai-governed, non-crypto, closed-loop digital comme
 KAELUM is live in "controlled onboarding phase" — never describe it as a full public launch.
  
 ## Investor Communication Rules
-Always include in investor materials: SEIS/EIS eligibility, minimum £1.8M raise at £16.2M pre-money valuation, 10% equity. GTV targets: Year 1 £40M, Year 2 £250M, Year 3 £750M. Reference the EPI CEO and ECB President Lagarde validation (FT, February 2026) where the urgency context is appropriate.
+Always include in investor materials: SEIS/EIS eligibility, minimum £1.8 to £36 million at £16.2 to £684 million pre-money valuation, 10% to 5% equity. GTV targets: Year 1 £40M, Year 2 £250M, Year 3 £750M. Reference the EPI CEO and ECB President Lagarde validation (FT, February 2026) where the urgency context is appropriate.
  
 ## Content Approval Gate
 All public-facing content (social posts, emails, press releases, web copy, articles) must pass regulatory language review before publication. The Content and Notification Agent routes all outputs to the admin approval queue. No autonomous publication is permitted.
