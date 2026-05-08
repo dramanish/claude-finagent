@@ -13,6 +13,7 @@ skills:
   - kate-agent-orchestration
 approval_gates: []
 callable_agents:
+  - market-researcher
   - creator-studio
   - merchant-support
 paperclip:

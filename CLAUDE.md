@@ -42,6 +42,20 @@ SENTINEL per-transaction risk scoring, K.A.T.E. Integration Chatbot.
 - Always: issued / allocated / credited — never minted / mined
 - Always: multi-instance Claude — never multi-LLM
 - Never reference competing AI systems
+
+## Anthropic Reference Agents (Retained from Fork)
+The following agents are retained from the anthropics/financial-services
+canonical repository. They are not KAELUM-specific operational agents
+but are preserved as reference implementations and callable sub-agents:
+
+earnings-reviewer, gl-reconciler, kyc-screener, market-researcher,
+meeting-prep-agent, model-builder, month-end-closer, pitch-agent,
+statement-auditor, valuation-reviewer.
+
+KAELUM adaptations: kyc-screener and market-researcher are callable
+by K.A.T.E. agents as specialist sub-agents. pitch-agent is adapted
+for KAELUM investor communications. earnings-reviewer, statement-auditor,
+and model-builder inform the Finance agent's reporting functions.
  
 ## Regulatory Context
 Closed-loop exemption: UK EMR 2011, EU E-Money Directive 2009/110/EC.

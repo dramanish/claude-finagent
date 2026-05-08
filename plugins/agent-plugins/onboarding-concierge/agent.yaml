@@ -21,6 +21,7 @@ approval_gates:
 callable_agents:
   - fraud-scam-detection
   - compliance-regulatory
+  - kyc-screener
 paperclip:
   heartbeat_interval: 1800
   event_bridge:

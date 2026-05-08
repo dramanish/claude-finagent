@@ -22,6 +22,7 @@ callable_agents:
   - legal-counsel
   - fraud-scam-detection
   - onboarding-concierge
+  - kyc-screener
 paperclip:
   heartbeat_interval: 3600
   event_bridge:
