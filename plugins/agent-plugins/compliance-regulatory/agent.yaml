@@ -13,7 +13,7 @@ skills:
   - regulatory-language
   - kyc-onboarding-rules
   - creator-economics
-  - 
+  - customer-economics
 approval_gates:
   - regulatory_submission
   - sar_filing
