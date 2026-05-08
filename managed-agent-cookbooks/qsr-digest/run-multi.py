@@ -203,6 +203,9 @@ Document structure:
 Save to: /out/qsr-digest-{TODAY}.docx
 
 After saving, report back: "Document complete. Saved to /out/qsr-digest-{TODAY}.docx"
+
+If asked to output /out/findings.json, run: bash: cat /out/findings.json
+and return the raw JSON content only, with no surrounding text.
 """
 
 
@@ -422,7 +425,7 @@ def run(coordinator_id, env_id):
                                 stage2_summary = done_text
                             elif stage_num == 3:
                                 stage3_done = True
-                    elif s and not s.startswith("LOG:"):
+                    elif s and not s.startswith("LOG:") and s != "[empty message]":
                         log(s[:100], "💬")
 
             elif etype in ("session.status_idle", "session.status_complete"):
@@ -432,8 +435,9 @@ def run(coordinator_id, env_id):
                     stage3_done = False
                     log("Retrieving findings from container...", "📥")
                     _send_msg(session.id,
-                        "Run this bash command and output ONLY the raw JSON, nothing else:\n"
-                        "bash: cat /out/findings.json")
+                        "Ask your note-writer subagent to run this bash command and relay "
+                        "the output back to me as raw JSON only, with no other text:\n"
+                        "cat /out/findings.json")
                 elif findings_json is not None:
                     log("All data captured — complete", "✅")
                     break
