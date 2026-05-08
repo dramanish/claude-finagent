@@ -1,0 +1,6 @@
+name: kaelum-kate-chatbot
+description: >-
+  Public-facing K.A.T.E. conversational interface for kaelum.app visitors answering questions about KAELUM
+model: claude-sonnet-4-6
+api_mode: standard_api
+system_prompt_file: kate-chatbot.md

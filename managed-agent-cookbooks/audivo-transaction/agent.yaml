@@ -1,0 +1,6 @@
+name: kaelum-audivo-transaction
+description: >-
+  Executes KLM transfer logic for every validated KAELUM transaction after SENTINEL clearance
+model: claude-haiku-4-5
+api_mode: standard_api
+system_prompt_file: audivo-transaction.md

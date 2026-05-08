@@ -1,0 +1,6 @@
+name: kaelum-sentinel-per-transaction
+description: >-
+  Real-time SENTINEL risk scoring for every KAELUM transaction before execution clearance
+model: claude-haiku-4-5
+api_mode: standard_api
+system_prompt_file: sentinel-per-transaction.md
