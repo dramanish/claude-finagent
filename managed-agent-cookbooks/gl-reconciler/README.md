@@ -24,10 +24,14 @@ export ANTHROPIC_API_KEY=sk-ant-...
 export APIDECK_API_KEY=apideck_...
 export APIDECK_APP_ID=...
 export APIDECK_CONSUMER_ID=...   # the customer's Vault consumer ID
-../../scripts/deploy-managed-agent.sh gl-reconciler --manifest ./examples/agent.apideck.yaml
+
+# Swap in the Apideck variant manifest, then deploy as usual
+cp managed-agent-cookbooks/gl-reconciler/agent.apideck.yaml \
+   managed-agent-cookbooks/gl-reconciler/agent.yaml
+./scripts/deploy-managed-agent.sh gl-reconciler
 ```
 
-See [`./examples/agent.apideck.yaml`](./examples/agent.apideck.yaml) for the worked manifest. Apideck is read-only by default (the reconciler doesn't need write).
+See [`./agent.apideck.yaml`](./agent.apideck.yaml) for the worked manifest. Apideck is read-only by default (the reconciler doesn't need write).
 
 ## Steering events
 

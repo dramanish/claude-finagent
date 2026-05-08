@@ -21,10 +21,13 @@ export ANTHROPIC_API_KEY=sk-ant-...
 export APIDECK_API_KEY=apideck_...
 export APIDECK_APP_ID=...
 export APIDECK_CONSUMER_ID=...
-../../scripts/deploy-managed-agent.sh month-end-closer --manifest ./examples/agent.apideck.yaml
+
+cp managed-agent-cookbooks/month-end-closer/agent.apideck.yaml \
+   managed-agent-cookbooks/month-end-closer/agent.yaml
+./scripts/deploy-managed-agent.sh month-end-closer
 ```
 
-See [`./examples/agent.apideck.yaml`](./examples/agent.apideck.yaml). Read-only — every drafted accrual or roll-forward stays in `./out/` for human posting.
+See [`./agent.apideck.yaml`](./agent.apideck.yaml). Read-only — every drafted accrual or roll-forward stays in `./out/` for human posting.
 
 ## Steering events
 

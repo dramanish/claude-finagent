@@ -18,7 +18,7 @@ name: gl-reconciler
 model: claude-opus-4-7
 
 system:
-  file: ../../../plugins/agent-plugins/gl-reconciler/agents/gl-reconciler.md
+  file: ../../plugins/agent-plugins/gl-reconciler/agents/gl-reconciler.md
   append: |
     You are running headless. Produce files in ./out/; do not assume an open Office document.
 
@@ -47,10 +47,10 @@ mcp_servers:
       x-apideck-consumer-id: ${APIDECK_CONSUMER_ID}
 
 skills:
-  - { from_plugin: ../../../plugins/agent-plugins/gl-reconciler }
-  - { from_plugin: ../../../plugins/vertical-plugins/apideck-erp }
+  - { from_plugin: ../../plugins/agent-plugins/gl-reconciler }
+  - { from_plugin: ../../plugins/vertical-plugins/apideck-erp }
 
 callable_agents:
-  - manifest: ../subagents/reader.yaml
-  - manifest: ../subagents/critic.yaml
-  - manifest: ../subagents/resolver.yaml
+  - manifest: ./subagents/reader.yaml
+  - manifest: ./subagents/critic.yaml
+  - manifest: ./subagents/resolver.yaml

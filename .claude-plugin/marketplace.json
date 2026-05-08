@@ -40,6 +40,11 @@
       "description": "Operational workflows: KYC document parsing and rules-grid evaluation"
     },
     {
+      "name": "apideck-erp",
+      "source": "./plugins/vertical-plugins/apideck-erp",
+      "description": "Unified ERP / accounting MCP connector via Apideck — one URL, 20+ cloud accounting systems (QuickBooks, Xero, NetSuite, Sage Intacct, Microsoft Dynamics, Zoho Books, MYOB, FreshBooks, ...). Drop-in source for the GL / subledger / NAV slots used by fund-admin agents."
+    },
+    {
       "name": "pitch-agent",
       "source": "./plugins/agent-plugins/pitch-agent",
       "description": "Comps, precedents, LBO to a branded pitch deck, end to end"

@@ -15,7 +15,7 @@ name: statement-auditor
 model: claude-opus-4-7
 
 system:
-  file: ../../../plugins/agent-plugins/statement-auditor/agents/statement-auditor.md
+  file: ../../plugins/agent-plugins/statement-auditor/agents/statement-auditor.md
   append: |
     You are running headless. Produce files in ./out/; do not assume an open Office document.
 
@@ -43,10 +43,10 @@ mcp_servers:
       x-apideck-consumer-id: ${APIDECK_CONSUMER_ID}
 
 skills:
-  - { from_plugin: ../../../plugins/agent-plugins/statement-auditor }
-  - { from_plugin: ../../../plugins/vertical-plugins/apideck-erp }
+  - { from_plugin: ../../plugins/agent-plugins/statement-auditor }
+  - { from_plugin: ../../plugins/vertical-plugins/apideck-erp }
 
 callable_agents:
-  - { manifest: ../subagents/statement-reader.yaml }
-  - { manifest: ../subagents/reconciler.yaml }
-  - { manifest: ../subagents/flagger.yaml }
+  - { manifest: ./subagents/statement-reader.yaml }
+  - { manifest: ./subagents/reconciler.yaml }
+  - { manifest: ./subagents/flagger.yaml }

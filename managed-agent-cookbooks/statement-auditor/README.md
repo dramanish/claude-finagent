@@ -21,10 +21,13 @@ export ANTHROPIC_API_KEY=sk-ant-...
 export APIDECK_API_KEY=apideck_...
 export APIDECK_APP_ID=...
 export APIDECK_CONSUMER_ID=...
-../../scripts/deploy-managed-agent.sh statement-auditor --manifest ./examples/agent.apideck.yaml
+
+cp managed-agent-cookbooks/statement-auditor/agent.apideck.yaml \
+   managed-agent-cookbooks/statement-auditor/agent.yaml
+./scripts/deploy-managed-agent.sh statement-auditor
 ```
 
-See [`./examples/agent.apideck.yaml`](./examples/agent.apideck.yaml). Read-only — flagger output stays in `./out/` for IR sign-off.
+See [`./agent.apideck.yaml`](./agent.apideck.yaml). Read-only — flagger output stays in `./out/` for IR sign-off.
 
 ## Steering events
 

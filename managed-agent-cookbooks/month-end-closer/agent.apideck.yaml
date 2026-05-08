@@ -11,7 +11,7 @@ name: month-end-closer
 model: claude-opus-4-7
 
 system:
-  file: ../../../plugins/agent-plugins/month-end-closer/agents/month-end-closer.md
+  file: ../../plugins/agent-plugins/month-end-closer/agents/month-end-closer.md
   append: |
     You are running headless. Produce files in ./out/; do not assume an open Office document.
 
@@ -40,10 +40,10 @@ mcp_servers:
       x-apideck-consumer-id: ${APIDECK_CONSUMER_ID}
 
 skills:
-  - { from_plugin: ../../../plugins/agent-plugins/month-end-closer }
-  - { from_plugin: ../../../plugins/vertical-plugins/apideck-erp }
+  - { from_plugin: ../../plugins/agent-plugins/month-end-closer }
+  - { from_plugin: ../../plugins/vertical-plugins/apideck-erp }
 
 callable_agents:
-  - { manifest: ../subagents/ledger-reader.yaml }
-  - { manifest: ../subagents/rollforward.yaml }
-  - { manifest: ../subagents/poster.yaml }
+  - { manifest: ./subagents/ledger-reader.yaml }
+  - { manifest: ./subagents/rollforward.yaml }
+  - { manifest: ./subagents/poster.yaml }
