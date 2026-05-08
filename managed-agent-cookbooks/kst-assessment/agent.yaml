@@ -1,6 +1,5 @@
 name: kaelum-kst-assessment
-description: >-
-  Assesses KST sub-token ownership applications and produces CEO-ready recommendation reports
 model: claude-sonnet-4-6
-api_mode: managed_agent
-system_prompt_file: kst-assessment.md
+
+system:
+  file: kst-assessment.md

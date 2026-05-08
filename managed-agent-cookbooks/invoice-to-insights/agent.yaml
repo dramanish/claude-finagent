@@ -1,6 +1,5 @@
 name: kaelum-invoice-to-insights
-description: >-
-  Parses invoices and transforms them into actionable financial intelligence for merchants and creators
 model: claude-sonnet-4-6
-api_mode: managed_agent
-system_prompt_file: invoice-to-insights.md
+
+system:
+  file: invoice-to-insights.md

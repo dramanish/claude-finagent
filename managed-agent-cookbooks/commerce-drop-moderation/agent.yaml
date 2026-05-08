@@ -1,6 +1,5 @@
 name: kaelum-commerce-drop-moderation
-description: >-
-  Reviews all Commerce Drop listings before publication for prohibited content and regulatory compliance
 model: claude-sonnet-4-6
-api_mode: managed_agent
-system_prompt_file: commerce-drop-moderation.md
+
+system:
+  file: moderation.md

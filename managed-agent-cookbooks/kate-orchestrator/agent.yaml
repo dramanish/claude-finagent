@@ -1,6 +1,5 @@
 name: kaelum-kate-orchestrator
-description: >-
-  Routes incoming Paperclip events to the correct K.A.T.E. agent or functional handler
 model: claude-haiku-4-5
-api_mode: standard_api
-system_prompt_file: kate-orchestrator.md
+
+system:
+  file: orchestrator.md
