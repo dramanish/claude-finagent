@@ -85,14 +85,27 @@ Only keep Australian items from the last 30 days with a real URL.
 Emit:
 LOG:STAGE:2:Classifying — applying GM/Board/Both audience rules and priority flags
 
-Use the knowledge base below to classify each item:
-- **audience**: GM, Board, or Both (follow GM vs Board Guide exactly)
-- **priority**: HIGH if it matches a Research Priority, NORMAL otherwise
-- **why_it_matters**: one sentence, Daniels Donuts specific — name the implication, not the observation
+Reject: items with no URL, US-only items, Tier 3 sources.
 
-Reject: items with no URL, US-only items, Tier 3 sources (anonymous blogs, social media).
+Write ALL classified items to /out/findings.json using bash. Use this exact JSON structure:
 
-After classifying emit:
+[
+  {{
+    "headline": "...",
+    "audience": "GM|Board|Both",
+    "priority": "HIGH|NORMAL",
+    "summary": "2-3 sentence summary",
+    "why": "one sentence why it matters to Daniels Donuts",
+    "source_name": "source name",
+    "url": "https://...",
+    "date": "DD Mon YYYY"
+  }}
+]
+
+Use this bash command to write the file:
+bash: mkdir -p /out && python3 -c "import json; data = [...]; open('/out/findings.json','w').write(json.dumps(data, indent=2))"
+
+After writing the file, emit:
 LOG:STAGE:2:DONE:N items — H HIGH PRIORITY, M NORMAL
 
 ---
@@ -102,6 +115,7 @@ LOG:STAGE:2:DONE:N items — H HIGH PRIORITY, M NORMAL
 Emit:
 LOG:STAGE:3:Writing — building Word document with python-docx
 
+Read /out/findings.json, then build the Word doc.
 Install python-docx if needed: pip install -q python-docx
 Write and run a Python script via bash to build the Word doc.
 
@@ -117,21 +131,6 @@ Create /out/ if it doesn't exist.
 
 After saving emit:
 LOG:STAGE:3:DONE:/out/qsr-digest-{TODAY}.docx
-
-Then output a clean summary in this exact format for the Gmail draft:
-DIGEST_SUMMARY_START
-Subject: LK Group QSR Digest — {TODAY} — N items (H HIGH PRIORITY)
-
-[For each HIGH PRIORITY item:]
-★ [Both/GM/Board] HEADLINE
-Why it matters: one sentence
-Source: name — URL
-
-[For each NORMAL item:]
-• [Both/GM/Board] HEADLINE
-Source: name — URL
-
-DIGEST_SUMMARY_END
 
 ---
 
@@ -229,10 +228,26 @@ def run(agent_id, env_id):
         betas=BETA,
     )
 
-    agent_replied = False
-    summary_lines = []
-    all_agent_text = []
-    capturing_summary = False
+    agent_replied  = False
+    stage2_summary = ""
+    stage3_done    = False
+    findings_json  = None
+
+    import re as _re
+
+    def _send_msg(session_id, msg):
+        client.beta.sessions.events.send(
+            session_id,
+            events=[{"type": "user.message", "content": [{"type": "text", "text": msg}]}],
+            betas=BETA,
+        )
+
+    def _retrieve_findings(session_id):
+        """Send a bash command to print findings.json and capture it."""
+        log("Retrieving findings from container...", "📥")
+        _send_msg(session_id,
+            "Run this bash command and output ONLY the raw JSON, nothing else:\n"
+            "bash: cat /out/findings.json")
 
     try:
         for event in client.beta.sessions.events.stream(session.id, betas=BETA, timeout=None):
@@ -245,13 +260,16 @@ def run(agent_id, env_id):
                 None,
             )
 
-            # Tool events
             if name == "web_search":
                 log(inp.get("query", "")[:72], "🌐")
             elif name == "bash":
                 cmd = inp.get("command", "")
                 if "pip install" in cmd:
                     log("Installing python-docx in container", "📦")
+                elif "findings.json" in cmd and "cat" in cmd:
+                    log("Reading findings from container", "📥")
+                elif "findings.json" in cmd:
+                    log("Writing findings.json", "💾")
                 elif "python" in cmd:
                     log("Running document builder", "⚙️ ")
                 else:
@@ -259,34 +277,58 @@ def run(agent_id, env_id):
             elif name == "write":
                 log(f"Writing {inp.get('file_path','').split('/')[-1]}", "📝")
 
-            # Agent messages — parse LOG lines and summary block
             elif etype == "agent.message" and text:
                 agent_replied = True
-                all_agent_text.append(text)
-                for line in text.splitlines():
-                    line = line.strip()
+                # Check for JSON payload (findings retrieval response)
+                stripped = text.strip()
+                if stripped.startswith("[") and '"headline"' in stripped:
+                    try:
+                        findings_json = __import__("json").loads(stripped)
+                        log(f"Findings captured: {len(findings_json)} items", "✅")
+                        continue
+                    except Exception:
+                        pass
+                # Also try extracting JSON from within the text
+                if findings_json is None and '"headline"' in text:
+                    m = _re.search(r'(\[[\s\S]*\])', text)
+                    if m:
+                        try:
+                            findings_json = __import__("json").loads(m.group(1))
+                            log(f"Findings captured: {len(findings_json)} items", "✅")
+                            continue
+                        except Exception:
+                            pass
 
-                    if line.startswith("LOG:STAGE:"):
-                        parts = line.split(":", 3)
+                for line in text.splitlines():
+                    s = line.strip()
+                    if s.startswith("LOG:STAGE:"):
+                        parts = s.split(":", 3)
                         stage_num = int(parts[2]) if parts[2].isdigit() else 0
-                        detail = parts[3] if len(parts) > 3 else ""
+                        detail    = parts[3] if len(parts) > 3 else ""
                         if "DONE" not in detail:
                             stage_banner(stage_num, detail)
                         else:
-                            log(detail.replace("DONE:", "").strip(), "✅")
-
-                    elif line == "DIGEST_SUMMARY_START":
-                        capturing_summary = True
-                    elif line == "DIGEST_SUMMARY_END":
-                        capturing_summary = False
-                    elif capturing_summary:
-                        summary_lines.append(line)
-                    elif line and not line.startswith("LOG:"):
-                        log(line[:100], "💬")
+                            done_text = detail.replace("DONE:", "").strip()
+                            log(done_text, "✅")
+                            if stage_num == 2:
+                                stage2_summary = done_text
+                            elif stage_num == 3:
+                                stage3_done = True
+                    elif s and not s.startswith("LOG:"):
+                        log(s[:100], "💬")
 
             elif etype in ("session.status_idle", "session.status_complete"):
-                if agent_replied:
-                    log("Session complete", "✅")
+                if not agent_replied:
+                    continue
+                if stage3_done and findings_json is None:
+                    # Stage 3 done but no JSON yet — retrieve it
+                    stage3_done = False  # prevent re-triggering
+                    _retrieve_findings(session.id)
+                elif findings_json is not None:
+                    log("All data captured — complete", "✅")
+                    break
+                else:
+                    log("Complete", "✅")
                     break
             elif etype == "session.status_failed":
                 log("Session FAILED", "❌")
@@ -299,31 +341,15 @@ def run(agent_id, env_id):
             s = client.beta.sessions.retrieve(session.id, betas=BETA)
             log(f"Stream dropped — session status: {getattr(s, 'status', 'unknown')}", "⚠️")
 
-    # Retrieve docx from container
     banner("Output", "─")
-    outfile = OUT_DIR / f"qsr-digest-{TODAY}.docx"
-    try:
-        file_bytes = client.beta.sessions.files.retrieve_content(
-            session.id, f"out/qsr-digest-{TODAY}.docx", betas=BETA
-        )
-        outfile.write_bytes(file_bytes)
-        log(f"Saved: {outfile}", "📄")
-    except Exception:
-        local = sorted(OUT_DIR.glob(f"qsr-digest-{TODAY}*.docx"))
-        if local:
-            log(f"Saved: {local[-1]}", "📄")
-        else:
-            log("Digest complete — docx in session container", "📄")
+    log("Digest complete — Word doc built in session container", "📄")
 
-    # Use captured DIGEST_SUMMARY block, or fall back to all agent text
-    if summary_lines:
-        return "\n".join(summary_lines)
-    return "\n\n".join(all_agent_text)
+    return {"summary": stage2_summary, "findings": findings_json or []}
 
 
 # ── Gmail draft ───────────────────────────────────────────────────────────────
 
-def gmail_draft(summary_text: str):
+def gmail_draft(result: dict):
     creds_path = COOKBOOK / "gmail-credentials.json"
     token_path = COOKBOOK / "gmail-token.json"
 
@@ -359,36 +385,93 @@ def gmail_draft(summary_text: str):
         log("DIGEST_TO_EMAIL not set in .env — skipping Gmail draft", "⚠️")
         return
 
-    subject = f"LK Group QSR Digest — {TODAY}"
+    summary  = result.get("summary", "")
+    findings = result.get("findings", [])
 
-    # Strip LOG: lines, stage banners, and empty noise — keep findings only
-    skip_prefixes = ("LOG:", "══", "──", "▶", "🔍", "🧠", "✍️", "STAGE")
-    body_lines = []
-    for line in summary_text.splitlines():
-        stripped = line.strip()
-        if not stripped:
-            body_lines.append("")
-            continue
-        if stripped.startswith("Subject:"):
-            subject = stripped.replace("Subject:", "").strip()
-            continue
-        if any(stripped.startswith(p) for p in skip_prefixes):
-            continue
-        body_lines.append(stripped)
+    if not findings:
+        log("No findings to email — check terminal output", "⚠️")
+        return
 
-    body = "\n".join(body_lines).strip()
-    if not body:
-        body = f"QSR Digest complete — {TODAY}. See attached Word document for full findings."
+    high   = [f for f in findings if f.get("priority", "").upper() == "HIGH"]
+    normal = [f for f in findings if f.get("priority", "").upper() != "HIGH"]
+
+    n_total = len(findings)
+    n_high  = len(high)
+
+    def sort_key(f):
+        order = {"Both": 0, "Board": 1, "GM": 2}
+        return order.get(f.get("audience", ""), 3)
+
+    high.sort(key=sort_key)
+    normal.sort(key=sort_key)
+
+    def fmt_item(f, star):
+        headline = f.get("headline", "")
+        audience = f.get("audience", "")
+        summ     = f.get("summary", "")
+        why      = f.get("why", "")
+        src_name = f.get("source_name", "")
+        url      = f.get("url", "")
+        date     = f.get("date", "")
+        source_line = f"{src_name} — {url}" if url else f"[UNSOURCED] {src_name}"
+        prefix = "★" if star else "•"
+        out = [f"{prefix} HIGH PRIORITY" if star else "•",
+               f"[{audience}] {headline}",
+               f"→ {why}" if why else "",
+               f"   {summ}" if summ else "",
+               f"   Source: {source_line}",
+               f"   {date}" if date else "",
+               ""]
+        return "\n".join(l for l in out if l != "")
+
+    lines = [
+        "LK Group — QSR Intelligence Digest",
+        f"{TODAY}  |  Daniels Donuts  |  {n_total} items  |  {n_high} HIGH PRIORITY",
+        "Sources: Public — ASX filings, news, public broker research",
+        "Review and send to relevant stakeholders. Do not forward without review.",
+        "=" * 65,
+        "",
+    ]
+
+    if high:
+        lines += ["★ HIGH PRIORITY", "─" * 65, ""]
+        for f in high:
+            lines.append(fmt_item(f, True))
+
+    if normal:
+        lines += ["• NORMAL", "─" * 65, ""]
+        for f in normal:
+            lines.append(fmt_item(f, False))
+
+    # Board summary
+    board_items = [f for f in findings if f.get("audience") in ("Board", "Both")]
+    gm_items    = [f for f in findings if f.get("audience") in ("GM", "Both")]
+
+    lines += ["", "─" * 65, "FOR THE BOARD", "─" * 65]
+    for f in board_items:
+        lines.append(f"  {f.get('headline','')[:90]}")
+    lines += ["", "─" * 65, "FOR THE GM", "─" * 65]
+    for f in gm_items:
+        lines.append(f"  {f.get('headline','')[:90]}")
+
+    lines += [
+        "",
+        "─" * 65,
+        f"Generated by LK Group QSR Digest Agent · Powered by Anthropic Claude",
+        "This is a draft — review items above and send to distribute, or discard to suppress.",
+    ]
+
+    body = "\n".join(lines)
 
     msg = email.message.EmailMessage()
     msg["To"]      = to_email
     msg["From"]    = to_email
-    msg["Subject"] = subject
+    msg["Subject"] = f"LK Group QSR Digest — {TODAY} — {n_total} items ({n_high} HIGH)"
     msg.set_content(body)
 
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
     service.users().drafts().create(userId="me", body={"message": {"raw": raw}}).execute()
-    log(f"Gmail draft created → {to_email}", "📧")
+    log(f"Gmail draft created → {to_email}  ({n_total} items)", "📧")
 
 
 def gmail_auth():
@@ -441,9 +524,5 @@ if __name__ == "__main__":
     log(f"Agent:       {agent_id}", "💾")
     log(f"Environment: {env_id}", "💾")
 
-    summary = run(agent_id, env_id)
-
-    if summary:
-        gmail_draft(summary)
-    else:
-        log("No summary captured — skipping Gmail draft", "📧")
+    result = run(agent_id, env_id)
+    gmail_draft(result)
