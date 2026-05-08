@@ -123,9 +123,9 @@ Run ALL 9 of these web searches — do not skip any:
 8. web_search("Daniels Donuts LK Group Australia 2026")
 9. web_search("new doughnut donut brand Australia Singapore international 2026")
 
-After all 9 searches, collect EVERY result that mentions Australia and has a real URL.
+After all 9 searches, collect results that mention Australia and have a real URL.
 Do NOT filter by date — include anything from the last 90 days. Let the classifier decide relevance.
-Do NOT limit the number of items — include everything you find.
+Limit to a maximum of 15 raw results — take the most recent and most relevant ones only.
 
 Write the results to /out/raw_results.json using bash:
 bash: mkdir -p /out && python3 -c "import json; data = [...]; open('/out/raw_results.json','w').write(json.dumps(data, indent=2))"
@@ -166,8 +166,8 @@ Apply these classification rules to every item:
 - Prefer Australian items. Also include international items (Singapore, US, UK) if they involve a brand that operates or is expanding into Australia — these are competitive intelligence.
 - When in doubt, INCLUDE the item as NORMAL priority rather than cutting it.
 
-## Calibration — err on the side of inclusion
-Target 6-10 items per digest. If you find yourself with fewer than 6, you are being too strict.
+## Calibration
+Target 6-10 items per digest — hard cap at 10. Pick the most actionable items.
 A new international donut brand opening in Australia is HIGH priority even if the source is a trade publication.
 Include items from the last 90 days — not just 30.
 
