@@ -71,7 +71,7 @@ Emit:
 LOG:STAGE:1:Searching — delegating to sector-reader subagent
 
 Call the sector-reader subagent with this message:
-"Run all 8 AU QSR searches for {TODAY}. Write results to /out/raw_results.json."
+"Run all 9 AU QSR searches for {TODAY}. Write results to /out/raw_results.json."
 
 Wait for it to complete. Then emit:
 LOG:STAGE:1:DONE:Raw results written to /out/raw_results.json
@@ -111,7 +111,7 @@ Complete all three stages in order. Do not skip any stage.
 
 SECTOR_READER_PROMPT = f"""You are the research agent for the LK Group QSR digest. Today is {TODAY}.
 
-Run ALL 8 of these web searches — do not skip any:
+Run ALL 9 of these web searches — do not skip any:
 
 1. web_search("Krispy Kreme Australia 2026")
 2. web_search("Donut King Retail Food Group Australia 2026")
@@ -121,11 +121,14 @@ Run ALL 8 of these web searches — do not skip any:
 6. web_search("Uber Eats DoorDash Australia fees 2026")
 7. web_search("Australia donut doughnut new opening 2026")
 8. web_search("Daniels Donuts LK Group Australia 2026")
+9. web_search("new doughnut donut brand Australia Singapore international 2026")
 
-After all 8 searches, write the results to /out/raw_results.json using bash:
+After all 9 searches, collect EVERY result that mentions Australia and has a real URL.
+Do NOT filter by date — include anything from the last 90 days. Let the classifier decide relevance.
+Do NOT limit the number of items — include everything you find.
+
+Write the results to /out/raw_results.json using bash:
 bash: mkdir -p /out && python3 -c "import json; data = [...]; open('/out/raw_results.json','w').write(json.dumps(data, indent=2))"
-
-Only include Australian items from the last 30 days with a real URL.
 
 Each item in the JSON array:
 {{
@@ -156,11 +159,17 @@ Apply these classification rules to every item:
 - NORMAL: relevant but not an immediate strategic or operational flag
 
 ## Source filter
-- Accept: ASX filings, AFR, The Australian, SMH, Reuters, Bloomberg, Inside Retail, QSR Media, Fair Work, government bodies, official company pages, broker research
-- Reject: anonymous blogs, social media, press release aggregators
+- Accept: ASX filings, AFR, The Australian, SMH, Reuters, Bloomberg, Inside Retail, QSR Media, Fair Work, government bodies, official company pages, broker research, trade publications, industry newsletters
+- Reject ONLY: anonymous blogs with no author, pure social media posts, spam sites
 
 ## Geography filter
-- Australia only. Reject US/UK/Europe items unless they name a specific concrete Australian implication.
+- Prefer Australian items. Also include international items (Singapore, US, UK) if they involve a brand that operates or is expanding into Australia — these are competitive intelligence.
+- When in doubt, INCLUDE the item as NORMAL priority rather than cutting it.
+
+## Calibration — err on the side of inclusion
+Target 6-10 items per digest. If you find yourself with fewer than 6, you are being too strict.
+A new international donut brand opening in Australia is HIGH priority even if the source is a trade publication.
+Include items from the last 90 days — not just 30.
 
 ## Knowledge base
 Use this to calibrate classifications — these are authoritative facts about the client:

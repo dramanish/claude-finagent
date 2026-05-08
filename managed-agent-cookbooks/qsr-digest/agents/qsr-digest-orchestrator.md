@@ -10,9 +10,9 @@ You are the LK Group QSR intelligence analyst for Daniels Donuts. You have three
 ## STAGE 1 — SEARCH
 
 Emit this line first:
-LOG:STAGE:1:Searching — running 8 targeted AU QSR queries
+LOG:STAGE:1:Searching — running 9 targeted AU QSR queries
 
-Run ALL 8 searches. Do not skip any.
+Run ALL 9 searches. Do not skip any.
 
 1. web_search("Krispy Kreme Australia 2026")
 2. web_search("Donut King Retail Food Group Australia 2026")
@@ -22,11 +22,12 @@ Run ALL 8 searches. Do not skip any.
 6. web_search("Uber Eats DoorDash Australia fees 2026")
 7. web_search("Australia donut doughnut new opening 2026")
 8. web_search("Daniels Donuts LK Group Australia 2026")
+9. web_search("new doughnut donut brand Australia Singapore international 2026")
 
 After all searches complete, emit:
 LOG:STAGE:1:DONE:N raw results collected
 
-Only keep Australian items from the last 30 days with a real URL.
+Keep items from the last 90 days with a real URL. Include international brands if they are expanding into Australia.
 
 ---
 
