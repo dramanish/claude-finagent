@@ -69,6 +69,10 @@ const KEYS = {
     pattern: /^[01]$/,
     hint: "1 allows Claude.ai OAuth alongside 3P (default: locked when other keys present)",
   },
+  disabled_features: {
+    pattern: /^[\w.]+(,[\w.]+)*$/,
+    hint: "comma-separated feature slugs to lock for users, e.g. skills.authoring",
+  },
 };
 
 const NEEDS_ENTRA = ["aws_role_arn", "graph_client_id", "entra_scope"];

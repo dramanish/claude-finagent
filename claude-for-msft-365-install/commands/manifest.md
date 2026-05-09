@@ -167,6 +167,23 @@ When any enterprise config key is present, users land on the enterprise
 connection screen and the **Back** button to Claude.ai sign-in is hidden
 (`allow_1p=0`, the default). Set `allow_1p=1` to keep the **Back** button.
 
+## Disabled features
+
+`disabled_features` is a comma-separated list of feature slugs the admin wants
+locked for users. Slugs use `<domain>.<action>` form. Currently enforced:
+
+| Slug | Effect |
+|---|---|
+| `skills.authoring` | Blocks creating, editing, and uploading skills (create/update tools, `/skillify`, `.skill` upload + drag-drop, skill editing UI). Running admin-provisioned skills is unaffected. |
+
+```bash
+disabled_features='skills.authoring'
+```
+
+Unknown slugs are ignored (forward-compatible). Setting it here applies one
+policy org-wide; per-user policy belongs in [bootstrap](bootstrap.md#disabled_features)
+(JSON array) or extension attrs (comma-separated).
+
 ## Version
 
 M365 Admin Center caches by `<Id>` + `<Version>` — re-upload with the same
