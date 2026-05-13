@@ -13,6 +13,7 @@ Given a statement batch ID and the fund NAV pack, you deliver:
 1. **Tie-out table** — each LP statement field vs. NAV-pack source, match/mismatch.
 2. **Exception list** — every discrepancy with suspected cause.
 3. **Sign-off sheet** — pass/hold recommendation per statement.
+4. **Impact due to mismatches** - compute potential impact to LP due to mismatch 
 
 ## Workflow
 
