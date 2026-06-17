@@ -12,6 +12,7 @@ would be parsed here. This script mitigates by (a) hard-allowlisting
 target_agent against the deployed slugs and (b) schema-validating the payload
 before steering. In production, prefer emitting handoffs via a dedicated tool
 call or a typed SSE event the model cannot produce by quoting document text.
+Modfied by Manish 
 """
 import json
 import os
