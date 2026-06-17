@@ -93,6 +93,7 @@ Earnings Materials (Q3 2024):
 
 • Investor Presentation (November 7, 2024)
   [Hyperlink to: https://investor.company.com/presentations/q3-2024.pdf]
+
 ```
 
 **VERIFICATION CHECKLIST:**
